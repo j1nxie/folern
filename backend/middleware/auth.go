@@ -26,7 +26,7 @@ func RequireAuth(next http.Handler) http.Handler {
 			utils.Error(w, http.StatusUnauthorized, models.FolernError{Message: "invalid token"})
 		}
 
-		ctx := context.WithValue(r.Context(), "user", claims)
+		ctx := context.WithValue(r.Context(), "user_id", claims.UserID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

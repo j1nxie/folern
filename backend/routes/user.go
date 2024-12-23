@@ -31,10 +31,10 @@ func (h *UserHandler) Routes() chi.Router {
 }
 
 func (h *UserHandler) getCurrentUser(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("id").(string)
+	user_id := r.Context().Value("user_id").(string)
 
 	var user models.User
-	if err := h.db.Where("id = ?", userID).First(&user).Error; err != nil {
+	if err := h.db.Where("id = ?", user_id).First(&user).Error; err != nil {
 		logger.Error("user.getCurrentUser", err, "failed to get user")
 		utils.Error(w, http.StatusInternalServerError, err)
 	}
