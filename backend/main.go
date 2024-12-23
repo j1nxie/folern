@@ -7,6 +7,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/j1nxie/folern/database"
 	"github.com/j1nxie/folern/logger"
 	"github.com/j1nxie/folern/models"
 	"github.com/j1nxie/folern/routes"
@@ -18,6 +19,7 @@ import (
 var oauth2Config *oauth2.Config
 
 func main() {
+	database.InitDB()
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
@@ -36,10 +38,12 @@ func main() {
 		utils.Error(w, http.StatusNotFound, models.FolernError{Message: "route not found"})
 	})
 
-	authHandler := routes.NewAuthHandler()
+	authHandler := routes.NewAuthHandler(database.DB)
+	userHandler := routes.NewUserHandler(database.DB)
 
 	r.Route("/api", func(r chi.Router) {
 		r.Mount("/auth", authHandler.Routes())
+		r.Mount("/users", userHandler.Routes())
 	})
 
 	logger.Operation("main.startup", "folern listening on :8080")

@@ -11,8 +11,8 @@ type CallbackRequest struct {
 }
 
 type AuthResponse struct {
-	Token string    `json:"token"`
-	User  *UserInfo `json:"user"`
+	Token string `json:"token"`
+	User  *User  `json:"user"`
 }
 
 type DiscordUser struct {
@@ -22,11 +22,4 @@ type DiscordUser struct {
 	Avatar        string `json:"avatar"`
 	Email         string `json:"email"`
 	Verified      bool   `json:"verified"`
-}
-
-type UserInfo struct {
-	ID       string `json:"id"`
-	Email    string `json:"email"`
-	Username string `json:"username"`
-	Avatar   string `json:"avatar"`
 }

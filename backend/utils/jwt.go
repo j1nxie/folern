@@ -16,7 +16,7 @@ type Claims struct {
 	Username string `json:"username"`
 }
 
-func GenerateJWT(user models.UserInfo) (string, error) {
+func GenerateJWT(user models.User) (string, error) {
 	claims := Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),

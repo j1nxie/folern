@@ -1,0 +1,14 @@
+services:
+    folern_postgres:
+        container_name: folern_postgres
+        image: postgres:17
+        environment:
+            POSTGRES_DB: folern_local
+            POSTGRES_PASSWORD: localdevpassword
+        ports:
+            - "5432:5432"
+        volumes:
+            - folern-db:/data/postgres
+
+volumes:
+    folern-db:
