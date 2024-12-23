@@ -20,6 +20,7 @@ var oauth2Config *oauth2.Config
 
 func main() {
 	database.InitDB()
+	logger.InitLogger()
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
