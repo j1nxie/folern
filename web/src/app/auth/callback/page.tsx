@@ -1,38 +1,33 @@
 "use client";
 
+import { useAtom } from "jotai";
 import { useRouter } from "next/navigation";
-import { use, useEffect, useState } from "react";
+import { use, useEffect } from "react";
 
-import { processCallback } from "@/lib/api/auth/process-callback";
+import { authCallbackAtom, isLoggedInAtom } from "@/atoms/auth";
 
 export default function AuthCallback({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }): React.JSX.Element {
 	const { code, state } = use(searchParams);
 	const router = useRouter();
-	const [isLoading, setIsLoading] = useState(true);
+	const [{ mutate: processAuth, status }] = useAtom(authCallbackAtom);
+	const [_, setIsLoggedIn] = useAtom(isLoggedInAtom);
 
 	useEffect(() => {
-		async function login(): Promise<void> {
-			try {
-				if (!code || !state) {
-					throw new Error("Invalid callback parameters.");
-				}
-
-				await processCallback({ code, state });
-
-				localStorage.setItem("LOGGED_IN", "true");
-
-				router.push("/");
-			} catch (e: unknown) {
-				throw new Error(`An error occurred when logging you in: ${e}`);
-			} finally {
-				setIsLoading(false);
-			}
+		if (code && state) {
+			processAuth({ code, state }, {
+				onSuccess: () => {
+					setIsLoggedIn(true);
+					router.replace("/");
+				},
+			});
 		}
+	}, [code, state, router, processAuth, setIsLoggedIn]);
 
-		void login();
-	}, [code, state, router]);
+	if (status === "error") {
+		throw new Error("Something wrong happened while logging you in.");
+	}
 
-	if (isLoading) {
+	if (status === "pending") {
 		return (
 			<div className="my-auto flex grow flex-col items-center justify-center gap-2">
 				<p>Logging you in through Discord...</p>

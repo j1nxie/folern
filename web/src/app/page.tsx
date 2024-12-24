@@ -1,15 +1,16 @@
 "use client";
 
 import { SiDiscord } from "@icons-pack/react-simple-icons";
+import { useAtom } from "jotai";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
 
+import { isLoggedInAtom } from "@/atoms/auth";
 import { Button } from "@/components/ui/button";
 import { getAuthURL } from "@/lib/api/auth/get-url";
 
 export default function Home(): React.JSX.Element {
-	const [loggedIn, _] = useState(localStorage.getItem("LOGGED_IN"));
+	const [isLoggedIn, _] = useAtom(isLoggedInAtom);
 
 	return (
 		<div className="my-auto flex grow flex-col items-center justify-center gap-2">
@@ -21,7 +22,7 @@ export default function Home(): React.JSX.Element {
 				<p>Powered by data from <Link href="https://kamai.tachi.ac" className="text-rose-400">Kamaitachi</Link>.</p>
 			</div>
 
-			{loggedIn !== "true" && (
+			{!isLoggedIn && (
 				<Button onClick={async () => {
 					const { url } = await getAuthURL();
 

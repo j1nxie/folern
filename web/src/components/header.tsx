@@ -1,15 +1,19 @@
 "use client";
 
+import { useAtom } from "jotai";
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
 
+import { authCallbackAtom, isLoggedInAtom, logoutAtom } from "@/atoms/auth";
 import { Button } from "@/components/ui/button";
 import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList } from "@/components/ui/navigation-menu";
 import { getAuthURL } from "@/lib/api/auth/get-url";
-import { logout } from "@/lib/api/auth/logout";
 
 export default function Header(): React.JSX.Element {
-	const [loggedIn, _] = useState(localStorage.getItem("LOGGED_IN"));
+	const router = useRouter();
+	const [isLoggedIn, setIsLoggedIn] = useAtom(isLoggedInAtom);
+	const [{ status: loginStatus }] = useAtom(authCallbackAtom);
+	const [{ mutate: processLogout }] = useAtom(logoutAtom);
 
 	return (
 		<header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -41,7 +45,7 @@ export default function Header(): React.JSX.Element {
 					</NavigationMenuList>
 
 					<div className="flex flex-1 items-center justify-between gap-2 md:justify-end">
-						{loggedIn !== "true" && (
+						{!isLoggedIn && loginStatus !== "pending" && (
 							<Button onClick={async () => {
 								const { url } = await getAuthURL();
 
@@ -52,12 +56,15 @@ export default function Header(): React.JSX.Element {
 							</Button>
 						)}
 
-						{loggedIn === "true" && (
+						{isLoggedIn && loginStatus !== "pending" && (
 							<Button
-								onClick={async () => {
-									await logout();
-									localStorage.removeItem("LOGGED_IN");
-									window.location.href = "/";
+								onClick={() => {
+									processLogout(undefined, {
+										onSuccess: () => {
+											setIsLoggedIn(false);
+											router.replace("/");
+										},
+									});
 								}}
 								variant="destructive"
 							>
