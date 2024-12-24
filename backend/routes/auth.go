@@ -25,7 +25,7 @@ func NewAuthHandler(db *gorm.DB) *AuthHandler {
 		oauth2Config: &oauth2.Config{
 			ClientID:     os.Getenv("DISCORD_CLIENT_ID"),
 			ClientSecret: os.Getenv("DISCORD_CLIENT_SECRET"),
-			RedirectURL:  "http://localhost:3000/api/auth/callback",
+			RedirectURL:  "https://localhost:3000/auth/callback",
 			Scopes: []string{
 				"identify",
 				"email",
@@ -41,6 +41,7 @@ func (h *AuthHandler) Routes() chi.Router {
 
 	r.Get("/url", h.getAuthURL)
 	r.Get("/callback", h.handleCallback)
+	r.Get("/logout", h.logout)
 
 	return r
 }
@@ -161,5 +162,29 @@ func (h *AuthHandler) handleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	http.SetCookie(w, &http.Cookie{
+		Name:     "auth_token",
+		Value:    jwtToken,
+		Path:     "/",
+		MaxAge:   60 * 60 * 24 * 7,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	})
+
 	utils.JSON(w, http.StatusCreated, models.AuthResponse{Token: jwtToken, User: &dbUser})
+}
+
+func (h *AuthHandler) logout(w http.ResponseWriter, _ *http.Request) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     "auth_token",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	})
+
+	utils.JSON(w, http.StatusOK, "successfully logged out.")
 }

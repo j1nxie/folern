@@ -11,19 +11,32 @@ import (
 
 func RequireAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var token string
+
 		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
-			utils.Error(w, http.StatusUnauthorized, models.FolernError{Message: "missing authorization header"})
+		if authHeader != "" {
+			bearerToken := strings.Split(authHeader, " ")
+			if len(bearerToken) == 2 {
+				token = bearerToken[1]
+			}
 		}
 
-		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-		if tokenString == authHeader {
-			utils.Error(w, http.StatusUnauthorized, models.FolernError{Message: "invalid authorization header"})
+		if token == "" {
+			cookie, err := r.Cookie("auth_token")
+			if err == nil {
+				token = cookie.Value
+			}
 		}
 
-		claims, err := utils.ValidateJWT(tokenString)
+		if token == "" {
+			utils.Error(w, http.StatusUnauthorized, models.FolernError{Message: "unauthorized"})
+			return
+		}
+
+		claims, err := utils.ValidateJWT(token)
 		if err != nil {
 			utils.Error(w, http.StatusUnauthorized, models.FolernError{Message: "invalid token"})
+			return
 		}
 
 		ctx := context.WithValue(r.Context(), "user_id", claims.UserID)
