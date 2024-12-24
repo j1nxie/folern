@@ -6,10 +6,6 @@ type AuthURLResponse struct {
 	URL template.URL `json:"url"`
 }
 
-type CallbackRequest struct {
-	Code string `json:"code"`
-}
-
 type AuthResponse struct {
 	Token string `json:"token"`
 	User  *User  `json:"user"`

@@ -40,7 +40,7 @@ func (h *AuthHandler) Routes() chi.Router {
 	r := chi.NewRouter()
 
 	r.Get("/url", h.getAuthURL)
-	r.Post("/callback", h.handleCallback)
+	r.Get("/callback", h.handleCallback)
 
 	return r
 }
@@ -67,11 +67,13 @@ func (h *AuthHandler) getAuthURL(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) handleCallback(w http.ResponseWriter, r *http.Request) {
-	var req models.CallbackRequest
+	state := r.URL.Query().Get("state")
+	code := r.URL.Query().Get("code")
 
 	cookie, err := r.Cookie("oauth_state")
 	if err != nil {
 		utils.Error(w, http.StatusBadRequest, models.FolernError{Message: "missing state cookie"})
+		return
 	}
 
 	http.SetCookie(w, &http.Cookie{
@@ -84,20 +86,23 @@ func (h *AuthHandler) handleCallback(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteLaxMode,
 	})
 
-	if r.URL.Query().Get("state") != cookie.Value {
+	if state != cookie.Value {
 		logger.Error("auth.callback", err, "invalid state", "expected", cookie.Value, "actual", r.URL.Query().Get("state"))
 		utils.Error(w, http.StatusBadRequest, models.FolernError{Message: "invalid state"})
+		return
 	}
 
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		logger.Error("auth.callback", err, "failed to decode request")
+	if code == "" {
+		logger.Error("auth.callback", err, "invalid code")
 		utils.Error(w, http.StatusBadRequest, err)
+		return
 	}
 
-	token, err := h.oauth2Config.Exchange(r.Context(), req.Code)
+	token, err := h.oauth2Config.Exchange(r.Context(), code)
 	if err != nil {
 		logger.Error("auth.callback", err, "failed to exchange code")
 		utils.Error(w, http.StatusInternalServerError, err)
+		return
 	}
 
 	client := h.oauth2Config.Client(r.Context(), token)
@@ -105,6 +110,7 @@ func (h *AuthHandler) handleCallback(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		logger.Error("auth.callback", err, "failed to get user data")
 		utils.Error(w, http.StatusInternalServerError, err)
+		return
 	}
 	defer resp.Body.Close()
 
@@ -112,6 +118,7 @@ func (h *AuthHandler) handleCallback(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(resp.Body).Decode(&discordUser); err != nil {
 		logger.Error("auth.callback", err, "failed to decode user data")
 		utils.Error(w, http.StatusInternalServerError, err)
+		return
 	}
 
 	var dbUser models.User
@@ -129,10 +136,12 @@ func (h *AuthHandler) handleCallback(w http.ResponseWriter, r *http.Request) {
 			if err := h.db.Create(&dbUser).Error; err != nil {
 				logger.Error("auth.callback", err, "failed to create user")
 				utils.Error(w, http.StatusInternalServerError, err)
+				return
 			}
 		} else {
 			logger.Error("auth.callback", result.Error, "failed to query user")
 			utils.Error(w, http.StatusInternalServerError, result.Error)
+			return
 		}
 	} else {
 		dbUser.Email = discordUser.Email
@@ -141,6 +150,7 @@ func (h *AuthHandler) handleCallback(w http.ResponseWriter, r *http.Request) {
 		if err := h.db.Save(&dbUser).Error; err != nil {
 			logger.Error("auth.callback", err, "failed to update user")
 			utils.Error(w, http.StatusInternalServerError, err)
+			return
 		}
 	}
 
@@ -148,6 +158,7 @@ func (h *AuthHandler) handleCallback(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		logger.Error("auth.callback", err, "failed to generate jwt")
 		utils.Error(w, http.StatusInternalServerError, err)
+		return
 	}
 
 	utils.JSON(w, http.StatusCreated, models.AuthResponse{Token: jwtToken, User: &dbUser})
