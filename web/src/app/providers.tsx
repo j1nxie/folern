@@ -2,6 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Provider } from "jotai";
+import { ThemeProvider } from "next-themes";
 import { useState } from "react";
 
 export function Providers({ children }: { children: React.ReactNode }): React.JSX.Element {
@@ -21,9 +22,11 @@ export function Providers({ children }: { children: React.ReactNode }): React.JS
 
 	return (
 		<Provider>
-			<QueryClientProvider client={queryClient}>
-				{children}
-			</QueryClientProvider>
+			<ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+				<QueryClientProvider client={queryClient}>
+					{children}
+				</QueryClientProvider>
+			</ThemeProvider>
 		</Provider>
 	);
 }
