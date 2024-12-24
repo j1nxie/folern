@@ -41,10 +41,12 @@ func main() {
 
 	authHandler := routes.NewAuthHandler(database.DB)
 	userHandler := routes.NewUserHandler(database.DB)
+	statusHandler := routes.NewStatusHandler()
 
 	r.Route("/api", func(r chi.Router) {
 		r.Mount("/auth", authHandler.Routes())
 		r.Mount("/users", userHandler.Routes())
+		r.Mount("/status", statusHandler.Routes())
 	})
 
 	logger.Operation("main.startup", "folern listening on :8080")
