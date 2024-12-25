@@ -46,7 +46,7 @@ export default function Header(): React.JSX.Element {
 						</NavigationMenuItem>
 					</NavigationMenuList>
 
-					<div className="flex flex-1 items-center justify-between gap-2 md:justify-end">
+					<div className="flex flex-1 items-center justify-end gap-2">
 						{!isLoggedIn && loginStatus !== "pending" && (
 							<Button onClick={async () => {
 								const { url } = await getAuthURL();

@@ -16,10 +16,10 @@ export default function Home(): React.JSX.Element {
 		<div className="my-auto flex grow flex-col items-center justify-center gap-2">
 			<Image src="/folern.png" alt="folern" width={200} height={200} className="rounded-xl" priority />
 
-			<div className="my-4 flex flex-col items-center gap-2">
+			<div className="my-4 flex flex-col items-center gap-2 px-4 text-center">
 				<h1 className="text-2xl font-bold">folern</h1>
 				<p>An unofficial tool for tracking and calculating OVER POWER stats for CHUNITHM.</p>
-				<p>Powered by data from <Link href="https://kamai.tachi.ac" className="text-rose-400">Kamaitachi</Link>.</p>
+				<p>Powered by data from <Link href="https://kamai.tachi.ac" className="text-rose-400 underline-offset-4 hover:underline">Kamaitachi</Link>.</p>
 			</div>
 
 			{!isLoggedIn && (
