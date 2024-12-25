@@ -1,10 +1,10 @@
 import type { User } from "./user";
 
-export interface AuthURLResponse {
+export interface DiscordAuthURLResponse {
 	url: string;
 }
 
-export interface AuthResponse {
+export interface DiscordAuthResponse {
 	token: string;
 	user: User;
 }

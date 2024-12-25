@@ -4,7 +4,7 @@ import { atomWithMutation } from "jotai-tanstack-query";
 import { logout } from "@/lib/api/auth/logout";
 import { processDiscordCallback } from "@/lib/api/auth/process-discord-callback";
 import { processKamaitachiCallback } from "@/lib/api/auth/process-kamaitachi-callback";
-import type { AuthResponse } from "@/lib/types/auth";
+import type { DiscordAuthResponse } from "@/lib/types/auth";
 
 export const isLoggedInAtom = atomWithStorage("auth-logged-in", false);
 
@@ -16,7 +16,7 @@ interface CallbackParams {
 export const authDiscordCallback = atomWithMutation(
 	() => ({
 		mutationKey: ["auth-discord-callback"],
-		mutationFn: async ({ code, state }: CallbackParams): Promise<AuthResponse> => {
+		mutationFn: async ({ code, state }: CallbackParams): Promise<DiscordAuthResponse> => {
 			if (!code || !state) {
 				throw new Error("Invalid callback parameters.");
 			}
