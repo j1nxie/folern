@@ -4,7 +4,7 @@ import { useAtom } from "jotai";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { authCallbackAtom, isLoggedInAtom, logoutAtom } from "@/atoms/auth";
+import { authDiscordCallback, isLoggedInAtom, logoutAtom } from "@/atoms/auth";
 import { Button } from "@/components/ui/button";
 import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList } from "@/components/ui/navigation-menu";
 import { getAuthURL } from "@/lib/api/auth/get-url";
@@ -14,7 +14,7 @@ import { ModeToggle } from "./dark-mode-toggle";
 export default function Header(): React.JSX.Element {
 	const router = useRouter();
 	const [isLoggedIn, setIsLoggedIn] = useAtom(isLoggedInAtom);
-	const [{ status: loginStatus }] = useAtom(authCallbackAtom);
+	const [{ status: loginStatus }] = useAtom(authDiscordCallback);
 	const [{ mutate: processLogout }] = useAtom(logoutAtom);
 
 	return (

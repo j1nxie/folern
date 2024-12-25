@@ -4,12 +4,12 @@ import { useAtom } from "jotai";
 import { useRouter } from "next/navigation";
 import { use, useEffect } from "react";
 
-import { authCallbackAtom, isLoggedInAtom } from "@/atoms/auth";
+import { authDiscordCallback, isLoggedInAtom } from "@/atoms/auth";
 
 export default function AuthCallback({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }): React.JSX.Element {
 	const { code, state } = use(searchParams);
 	const router = useRouter();
-	const [{ mutate: processAuth, status }] = useAtom(authCallbackAtom);
+	const [{ mutate: processAuth, status }] = useAtom(authDiscordCallback);
 	const [_, setIsLoggedIn] = useAtom(isLoggedInAtom);
 
 	useEffect(() => {
