@@ -50,6 +50,7 @@ func (h *AuthHandler) getAuthURL(w http.ResponseWriter, r *http.Request) {
 	state, err := utils.GenerateState()
 	if err != nil {
 		utils.Error(w, http.StatusInternalServerError, models.FolernError{Message: "failed to generate state"})
+		return
 	}
 
 	http.SetCookie(w, &http.Cookie{
