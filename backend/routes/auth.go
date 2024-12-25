@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/j1nxie/folern/logger"
+	"github.com/j1nxie/folern/middleware"
 	"github.com/j1nxie/folern/models"
 	"github.com/j1nxie/folern/utils"
 	"github.com/ravener/discord-oauth2"
@@ -16,13 +17,14 @@ import (
 )
 
 type AuthHandler struct {
-	oauth2Config *oauth2.Config
-	db           *gorm.DB
+	discordOAuth2Config    *oauth2.Config
+	kamaitachiOAuth2Config utils.KamaitachiOAuth2Config
+	db                     *gorm.DB
 }
 
 func NewAuthHandler(db *gorm.DB) *AuthHandler {
 	return &AuthHandler{
-		oauth2Config: &oauth2.Config{
+		discordOAuth2Config: &oauth2.Config{
 			ClientID:     os.Getenv("DISCORD_CLIENT_ID"),
 			ClientSecret: os.Getenv("DISCORD_CLIENT_SECRET"),
 			RedirectURL:  "https://localhost:3000/auth/callback",
@@ -32,6 +34,21 @@ func NewAuthHandler(db *gorm.DB) *AuthHandler {
 			},
 			Endpoint: discord.Endpoint,
 		},
+		kamaitachiOAuth2Config: utils.KamaitachiOAuth2Config{
+			Config: &oauth2.Config{
+				ClientID:     os.Getenv("KAMAITACHI_CLIENT_ID"),
+				ClientSecret: os.Getenv("KAMAITACHI_CLIENT_SECRET"),
+				RedirectURL:  "https://localhost:3000/auth/kt-callback",
+				Scopes: []string{
+					"customise_scores",
+				},
+				Endpoint: oauth2.Endpoint{
+					AuthURL:   "https://kamai.tachi.ac/api/v1/oauth/request-auth",
+					TokenURL:  "https://kamai.tachi.ac/api/v1/oauth/token",
+					AuthStyle: oauth2.AuthStyleInParams,
+				},
+			},
+		},
 		db: db,
 	}
 }
@@ -40,7 +57,11 @@ func (h *AuthHandler) Routes() chi.Router {
 	r := chi.NewRouter()
 
 	r.Get("/url", h.getAuthURL)
-	r.Get("/callback", h.handleCallback)
+	r.Get("/callback", h.handleDiscordCallback)
+	r.Group(func(r chi.Router) {
+		r.Use(middleware.RequireAuth)
+		r.Get("/kt-callback", h.handleKamaitachiCallback)
+	})
 	r.Get("/logout", h.logout)
 
 	return r
@@ -63,12 +84,12 @@ func (h *AuthHandler) getAuthURL(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteLaxMode,
 	})
 
-	url := h.oauth2Config.AuthCodeURL(state)
+	url := h.discordOAuth2Config.AuthCodeURL(state)
 
 	utils.JSON(w, http.StatusOK, models.AuthURLResponse{URL: template.URL(url)})
 }
 
-func (h *AuthHandler) handleCallback(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHandler) handleDiscordCallback(w http.ResponseWriter, r *http.Request) {
 	state := r.URL.Query().Get("state")
 	code := r.URL.Query().Get("code")
 
@@ -100,14 +121,14 @@ func (h *AuthHandler) handleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := h.oauth2Config.Exchange(r.Context(), code)
+	token, err := h.discordOAuth2Config.Exchange(r.Context(), code)
 	if err != nil {
 		logger.Error("auth.callback", err, "failed to exchange code")
 		utils.Error(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	client := h.oauth2Config.Client(r.Context(), token)
+	client := h.discordOAuth2Config.Client(r.Context(), token)
 	resp, err := client.Get("https://discord.com/api/users/@me")
 	if err != nil {
 		logger.Error("auth.callback", err, "failed to get user data")
@@ -174,6 +195,65 @@ func (h *AuthHandler) handleCallback(w http.ResponseWriter, r *http.Request) {
 	})
 
 	utils.JSON(w, http.StatusCreated, models.AuthResponse{Token: jwtToken, User: &dbUser})
+}
+
+func (h *AuthHandler) handleKamaitachiCallback(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("user_id").(string)
+	code := r.URL.Query().Get("code")
+
+	// TODO: neater errors here
+	if code == "" {
+		logger.Error("auth.kt-callback", models.FolernError{Message: "invalid code"}, "invalid code")
+		utils.Error(w, http.StatusBadRequest, models.FolernError{Message: "invalid code"})
+		return
+	}
+
+	token, err := h.kamaitachiOAuth2Config.Exchange(r.Context(), code)
+	if err != nil {
+		logger.Error("auth.kt-callback", err, "failed to exchange code")
+		utils.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	client = h.kamaitachiOAuth2Config.Client(r.Context(), token)
+	resp, err := client.Get("https://kamai.tachi.ac/api/v1/me")
+	if err != nil {
+		logger.Error("auth.kt-callback", err, "failed to get user data")
+		utils.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+	defer resp.Body.Close()
+
+	var dbUserAPIKey models.UserAPIKey
+	result := h.db.Where("user_id = ?", userID).First(&dbUserAPIKey)
+
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			dbUserAPIKey = models.UserAPIKey{
+				UserID:          userID,
+				EncryptedAPIKey: utils.EncryptAPIKey(token.AccessToken),
+			}
+
+			if err := h.db.Create(&dbUserAPIKey).Error; err != nil {
+				logger.Error("auth.kt-callback", err, "failed to create user API key")
+				utils.Error(w, http.StatusInternalServerError, err)
+				return
+			}
+		} else {
+			logger.Error("auth.kt-callback", result.Error, "failed to query user API key")
+			utils.Error(w, http.StatusInternalServerError, result.Error)
+			return
+		}
+	} else {
+		dbUserAPIKey.EncryptedAPIKey = utils.EncryptAPIKey(token.AccessToken)
+		if err := h.db.Save(&dbUserAPIKey).Error; err != nil {
+			logger.Error("auth.kt-callback", err, "failed to update user API key")
+			utils.Error(w, http.StatusInternalServerError, err)
+			return
+		}
+	}
+
+	utils.JSON(w, http.StatusOK, "successfully authenticated with Kamaitachi.")
 }
 
 func (h *AuthHandler) logout(w http.ResponseWriter, _ *http.Request) {

@@ -27,7 +27,16 @@ func InitDB() {
 		panic("failed to connect to database")
 	}
 
-	if err := db.AutoMigrate(&models.User{}); err != nil {
+	db.Exec(`
+		DO $$ BEGIN
+			CREATE TYPE score_lamp AS ENUM ('FAILED', 'CLEAR', 'FULL COMBO', 'ALL JUSTICE', 'ALL JUSTICE CRITICAL');
+		EXCEPTION
+			WHEN duplicate_object THEN null;
+		END $$;
+		`,
+	)
+
+	if err := db.AutoMigrate(&models.User{}, &models.Score{}, &models.Song{}, &models.Chart{}, &models.UserAPIKey{}); err != nil {
 		logger.Error("database.init", err, "failed to migrate database")
 		panic("failed to migrate database")
 	}
