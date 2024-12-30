@@ -5,6 +5,7 @@ import { Geist, Geist_Mono as GeistMono } from "next/font/google";
 
 import Footer from "@/components/footer";
 import Header from "@/components/header";
+import { LayoutWrapper } from "@/components/layout-wrapper";
 
 import { Providers } from "./providers";
 
@@ -35,11 +36,13 @@ export default function RootLayout({
 			>
 				<Providers>
 					<div className="relative flex min-h-svh flex-col bg-background font-sans">
-						<Header />
+						<LayoutWrapper>
+							<Header />
 
-						<main className="flex grow">{children}</main>
+							<main className="flex grow">{children}</main>
 
-						<Footer />
+							<Footer />
+						</LayoutWrapper>
 					</div>
 				</Providers>
 			</body>
