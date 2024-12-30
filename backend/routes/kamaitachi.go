@@ -39,6 +39,12 @@ func (h *KamaitachiHandler) syncScores(w http.ResponseWriter, r *http.Request) {
 
 	var creds models.UserAPIKey
 	if err := h.db.Where("user_id = ?", userID).First(&creds).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			logger.Error("kt.sync", err, "user not authenticated with Kamaitachi")
+			utils.Error(w, http.StatusUnauthorized, models.FolernError{Message: "user not authenticated with Kamaitachi"})
+			return
+		}
+
 		logger.Error("kt.sync", err, "failed to fetch user API key")
 		utils.Error(w, http.StatusInternalServerError, err)
 		return
