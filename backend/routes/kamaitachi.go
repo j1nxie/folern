@@ -118,10 +118,13 @@ func (h *KamaitachiHandler) processSyncRequest(userID string) (int, int, error) 
 
 	for _, pb := range ktRes.Body.PBs {
 		var chart models.Chart
-		h.db.Where("id = ?", pb.ChartID).First(&chart)
+		result := h.db.Where("id = ?", pb.ChartID).First(&chart)
 
-		var dbScore models.Score
-		h.db.Where("chart_id = ? AND song_id = ?", pb.ChartID, pb.SongID).First(&dbScore)
+		if result.Error != nil {
+			logger.Error("kt.sync", err, "error when fetching chart for score")
+			errorCount++
+			continue
+		}
 
 		folernScore := models.Score{
 			Score:     int64(pb.ScoreData.Score),
