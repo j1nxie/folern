@@ -128,6 +128,7 @@ func (h *KamaitachiHandler) processSyncRequest(userID string) (int, int, error) 
 			ChartID:   pb.ChartID,
 			SongID:    pb.SongID,
 			Lamp:      pb.ScoreData.Lamp,
+			UserID:    userID,
 			OverPower: utils.CalculateOverpower(int64(pb.ScoreData.Score), chart.Level, string(pb.ScoreData.Lamp)),
 		}
 
@@ -135,6 +136,7 @@ func (h *KamaitachiHandler) processSyncRequest(userID string) (int, int, error) 
 			Columns: []clause.Column{
 				{Name: "chart_id"},
 				{Name: "song_id"},
+				{Name: "user_id"},
 			},
 			DoUpdates: clause.AssignmentColumns([]string{"score", "lamp", "over_power"}),
 		}).Create(&folernScore).Error; err != nil {
