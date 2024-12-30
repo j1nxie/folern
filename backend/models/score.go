@@ -13,6 +13,15 @@ type Score struct {
 	UserID    string          `gorm:"uniqueIndex:idx_chart_song_user" json:"user_id"`  // The ID of the user that the score belongs to.
 }
 
+// Represents a score entry as returned by folern's own API.
+type ScoreResponse struct {
+	ChartID   string          `gorm:"uniqueIndex:idx_chart_song_user" json:"chart_id"` // The ID of the chart the score is associated with.
+	SongID    int             `gorm:"uniqueIndex:idx_chart_song_user" json:"song_id"`  // The ID of the song the chart, and by extension, the score, is associated with.
+	Score     int64           `json:"score"`                                           // The score, as displayed ingame.
+	Lamp      ScoreLamp       `gorm:"type:score_lamp" json:"lamp"`                     // The clear status of the score.
+	OverPower decimal.Decimal `json:"over_power"`                                      // The calculated OVER POWER value of the score.
+}
+
 // Represents a chart in the database.
 type Chart struct {
 	ID     string          `gorm:"primaryKey" json:"id"` // The chart's ID.
