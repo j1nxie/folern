@@ -14,6 +14,7 @@ import (
 	"github.com/ravener/discord-oauth2"
 	"golang.org/x/oauth2"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type AuthHandler struct {
@@ -144,37 +145,22 @@ func (h *AuthHandler) handleDiscordCallback(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	var dbUser models.User
-	result := h.db.Where("id = ?", discordUser.ID).First(&dbUser)
+	dbUser := models.User{
+		ID:       discordUser.ID,
+		Email:    discordUser.Email,
+		Username: discordUser.Username,
+		Avatar:   discordUser.Avatar,
+	}
 
-	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			dbUser = models.User{
-				ID:       discordUser.ID,
-				Email:    discordUser.Email,
-				Username: discordUser.Username,
-				Avatar:   discordUser.Avatar,
-			}
-
-			if err := h.db.Create(&dbUser).Error; err != nil {
-				logger.Error("auth.callback", err, "failed to create user")
-				utils.Error(w, http.StatusInternalServerError, err)
-				return
-			}
-		} else {
-			logger.Error("auth.callback", result.Error, "failed to query user")
-			utils.Error(w, http.StatusInternalServerError, result.Error)
-			return
-		}
-	} else {
-		dbUser.Email = discordUser.Email
-		dbUser.Username = discordUser.Username
-		dbUser.Avatar = discordUser.Avatar
-		if err := h.db.Save(&dbUser).Error; err != nil {
-			logger.Error("auth.callback", err, "failed to update user")
-			utils.Error(w, http.StatusInternalServerError, err)
-			return
-		}
+	if err := h.db.Clauses(clause.OnConflict{
+		Columns: []clause.Column{
+			{Name: "id"},
+		},
+		DoUpdates: clause.AssignmentColumns([]string{"email", "username", "avatar"}),
+	}).Create(&dbUser).Error; err != nil {
+		logger.Error("auth.callback", err, "failed to process user")
+		utils.Error(w, http.StatusInternalServerError, err)
+		return
 	}
 
 	jwtToken, err := utils.GenerateJWT(dbUser)
@@ -224,33 +210,20 @@ func (h *AuthHandler) handleKamaitachiCallback(w http.ResponseWriter, r *http.Re
 	}
 	defer resp.Body.Close()
 
-	var dbUserAPIKey models.UserAPIKey
-	result := h.db.Where("user_id = ?", userID).First(&dbUserAPIKey)
+	dbUserAPIKey := models.UserAPIKey{
+		UserID:          userID,
+		EncryptedAPIKey: utils.EncryptAPIKey(token.AccessToken),
+	}
 
-	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			dbUserAPIKey = models.UserAPIKey{
-				UserID:          userID,
-				EncryptedAPIKey: utils.EncryptAPIKey(token.AccessToken),
-			}
-
-			if err := h.db.Create(&dbUserAPIKey).Error; err != nil {
-				logger.Error("auth.kt-callback", err, "failed to create user API key")
-				utils.Error(w, http.StatusInternalServerError, err)
-				return
-			}
-		} else {
-			logger.Error("auth.kt-callback", result.Error, "failed to query user API key")
-			utils.Error(w, http.StatusInternalServerError, result.Error)
-			return
-		}
-	} else {
-		dbUserAPIKey.EncryptedAPIKey = utils.EncryptAPIKey(token.AccessToken)
-		if err := h.db.Save(&dbUserAPIKey).Error; err != nil {
-			logger.Error("auth.kt-callback", err, "failed to update user API key")
-			utils.Error(w, http.StatusInternalServerError, err)
-			return
-		}
+	if err := h.db.Clauses(clause.OnConflict{
+		Columns: []clause.Column{
+			{Name: "user_id"},
+		},
+		DoUpdates: clause.AssignmentColumns([]string{"encrypted_api_key"}),
+	}).Create(&dbUserAPIKey).Error; err != nil {
+		logger.Error("auth.kt-callback", err, "failed to update user API key")
+		utils.Error(w, http.StatusInternalServerError, err)
+		return
 	}
 
 	utils.JSON(w, http.StatusOK, "successfully authenticated with Kamaitachi.")
