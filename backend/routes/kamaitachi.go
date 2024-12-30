@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/j1nxie/folern/logger"
+	"github.com/j1nxie/folern/middleware"
 	"github.com/j1nxie/folern/models"
 	"github.com/j1nxie/folern/utils"
 	"gorm.io/gorm"
@@ -22,6 +23,7 @@ func NewKamaitachiHandler(db *gorm.DB) *KamaitachiHandler {
 func (h *KamaitachiHandler) Routes() chi.Router {
 	r := chi.NewRouter()
 
+	r.Use(middleware.RequireAuth)
 	r.Get("/sync", h.syncScores)
 
 	return r

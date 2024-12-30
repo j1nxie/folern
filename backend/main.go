@@ -40,13 +40,15 @@ func main() {
 	})
 
 	authHandler := routes.NewAuthHandler(database.DB)
-	userHandler := routes.NewUserHandler(database.DB)
+	kamaitachiHandler := routes.NewKamaitachiHandler(database.DB)
 	statusHandler := routes.NewStatusHandler()
+	userHandler := routes.NewUserHandler(database.DB)
 
 	r.Route("/api", func(r chi.Router) {
 		r.Mount("/auth", authHandler.Routes())
-		r.Mount("/users", userHandler.Routes())
+		r.Mount("/kamaitachi", kamaitachiHandler.Routes())
 		r.Mount("/status", statusHandler.Routes())
+		r.Mount("/users", userHandler.Routes())
 	})
 
 	logger.Operation("main.startup", "folern listening on :8080")
