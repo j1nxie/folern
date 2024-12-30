@@ -36,9 +36,14 @@ func InitDB() {
 		`,
 	)
 
-	if err := db.AutoMigrate(&models.User{}, &models.Score{}, &models.Song{}, &models.Chart{}, &models.UserAPIKey{}); err != nil {
+	if err := db.AutoMigrate(&models.User{}, &models.Score{}, &models.Song{}, &models.Chart{}, &models.UserAPIKey{}, &SeedVersion{}); err != nil {
 		logger.Error("database.init", err, "failed to migrate database")
 		panic("failed to migrate database")
+	}
+
+	if err := SeedDatabase(db); err != nil {
+		logger.Error("database.seed", err, "failed to seed database")
+		panic("failed to seed database")
 	}
 
 	DB = db
