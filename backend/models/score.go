@@ -4,13 +4,13 @@ import "github.com/shopspring/decimal"
 
 // Represents a score entry in the database, after processing from the Kamaitachi API.
 type Score struct {
-	ID        uint64          `gorm:"primaryKey" json:"id"`        // The ID of the score entry.
-	ChartID   string          `json:"chart_id"`                    // The ID of the chart the score is associated with.
-	SongID    string          `json:"song_id"`                     // The ID of the song the chart, and by extension, the score, is associated with.
-	Score     int64           `json:"score"`                       // The score, as displayed ingame.
-	Lamp      ScoreLamp       `gorm:"type:score_lamp" json:"lamp"` // The clear status of the score.
-	OverPower decimal.Decimal `json:"over_power"`                  // The calculated OVER POWER value of the score.
-	UserID    string          `json:"user_id"`                     // The ID of the user that the score belongs to.
+	ID        uint64          `gorm:"primaryKey" json:"id"`                            // The ID of the score entry.
+	ChartID   string          `gorm:"uniqueIndex:idx_chart_song_user" json:"chart_id"` // The ID of the chart the score is associated with.
+	SongID    int             `gorm:"uniqueIndex:idx_chart_song_user" json:"song_id"`  // The ID of the song the chart, and by extension, the score, is associated with.
+	Score     int64           `json:"score"`                                           // The score, as displayed ingame.
+	Lamp      ScoreLamp       `gorm:"type:score_lamp" json:"lamp"`                     // The clear status of the score.
+	OverPower decimal.Decimal `json:"over_power"`                                      // The calculated OVER POWER value of the score.
+	UserID    string          `gorm:"uniqueIndex:idx_chart_song_user" json:"user_id"`  // The ID of the user that the score belongs to.
 }
 
 // Represents a chart in the database.
