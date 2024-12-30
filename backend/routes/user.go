@@ -26,7 +26,7 @@ func (h *UserHandler) Routes() chi.Router {
 
 	r.Use(middleware.RequireAuth)
 	r.Get("/me", h.getCurrentUser)
-	r.Get("/me/stats", h.getStats)
+	r.Get("/{id}/stats", h.getStats)
 
 	return r
 }
@@ -36,6 +36,12 @@ func (h *UserHandler) getCurrentUser(w http.ResponseWriter, r *http.Request) {
 
 	var user models.User
 	if err := h.db.Where("id = ?", user_id).First(&user).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			logger.Error("user.getStats", err, "user not found")
+			utils.Error(w, http.StatusNotFound, err)
+			return
+		}
+
 		logger.Error("user.getCurrentUser", err, "failed to get user")
 		utils.Error(w, http.StatusInternalServerError, err)
 		return
@@ -45,7 +51,24 @@ func (h *UserHandler) getCurrentUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UserHandler) getStats(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("user_id").(string)
+	userID := chi.URLParam(r, "id")
+
+	if userID == "me" {
+		userID = r.Context().Value("user_id").(string)
+	}
+
+	var user models.User
+	if err := h.db.Where("id = ?", userID).First(&user).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			logger.Error("user.getStats", err, "user not found")
+			utils.Error(w, http.StatusNotFound, err)
+			return
+		}
+
+		logger.Error("user.getStats", err, "failed to get user")
+		utils.Error(w, http.StatusInternalServerError, err)
+		return
+	}
 
 	var results []models.ScoreResponse
 	if err := h.db.Raw(`
