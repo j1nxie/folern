@@ -4,26 +4,15 @@ import "github.com/shopspring/decimal"
 
 // Represents a score entry in the database, after processing from the Kamaitachi API.
 type Score struct {
-	ID        uint64          `gorm:"primaryKey" json:"id"`                            // The ID of the score entry.
+	ID        uint64          `gorm:"primaryKey" json:"-"`                             // The ID of the score entry.
 	ChartID   string          `gorm:"uniqueIndex:idx_chart_song_user" json:"chart_id"` // The ID of the chart the score is associated with.
 	SongID    int             `gorm:"uniqueIndex:idx_chart_song_user" json:"song_id"`  // The ID of the song the chart, and by extension, the score, is associated with.
 	Score     int64           `json:"score"`                                           // The score, as displayed ingame.
 	Lamp      ScoreLamp       `gorm:"type:score_lamp" json:"lamp"`                     // The clear status of the score.
 	OverPower decimal.Decimal `json:"over_power"`                                      // The calculated OVER POWER value of the score.
-	UserID    string          `gorm:"uniqueIndex:idx_chart_song_user" json:"user_id"`  // The ID of the user that the score belongs to.
+	UserID    string          `gorm:"uniqueIndex:idx_chart_song_user" json:"-"`        // The ID of the user that the score belongs to.
 	Chart     Chart           `gorm:"foreignKey:ChartID" json:"chart"`
 	Song      Song            `gorm:"foreignKey:SongID" json:"song"`
-}
-
-// Represents a score entry as returned by folern's own API.
-type ScoreResponse struct {
-	ChartID   string          `gorm:"uniqueIndex:idx_chart_song_user" json:"chart_id"` // The ID of the chart the score is associated with.
-	SongID    int             `gorm:"uniqueIndex:idx_chart_song_user" json:"song_id"`  // The ID of the song the chart, and by extension, the score, is associated with.
-	Score     int64           `json:"score"`                                           // The score, as displayed ingame.
-	Lamp      ScoreLamp       `gorm:"type:score_lamp" json:"lamp"`                     // The clear status of the score.
-	OverPower decimal.Decimal `json:"over_power"`                                      // The calculated OVER POWER value of the score.
-	Chart     Chart           `json:"chart"`
-	Song      Song            `json:"song"`
 }
 
 type OverPowerStatsResponse struct {
@@ -33,8 +22,8 @@ type OverPowerStatsResponse struct {
 }
 
 type OverPowerScoresResponse struct {
-	Genre   map[string][]ScoreResponse `json:"genre"`
-	Version map[string][]ScoreResponse `json:"version"`
+	Genre   map[string][]Score `json:"genre"`
+	Version map[string][]Score `json:"version"`
 }
 
 // Represents a chart in the database.

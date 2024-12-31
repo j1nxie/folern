@@ -33,8 +33,8 @@ func (h *UserHandler) Routes() chi.Router {
 	return r
 }
 
-func (h *UserHandler) retrieveScoresFromDB(userID string) ([]models.ScoreResponse, error) {
-	var results []models.ScoreResponse
+func (h *UserHandler) retrieveScoresFromDB(userID string) ([]models.Score, error) {
+	var results []models.Score
 	if err := h.db.Model(&models.Score{}).
 		Preload("Chart").
 		Preload("Song").
@@ -153,8 +153,8 @@ func (h *UserHandler) getScores(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	genre := make(map[string][]models.ScoreResponse)
-	version := make(map[string][]models.ScoreResponse)
+	genre := make(map[string][]models.Score)
+	version := make(map[string][]models.Score)
 
 	for _, item := range results {
 		genre[item.Song.Genre] = append(genre[item.Song.Genre], item)
