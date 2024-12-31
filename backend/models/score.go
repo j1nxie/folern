@@ -26,16 +26,15 @@ type ScoreResponse struct {
 	Song      Song            `json:"song"`
 }
 
-type OverPowerResponse struct {
-	Stats   OverPowerResponseStats     `json:"stats"`
-	Genre   map[string][]ScoreResponse `json:"genre"`
-	Version map[string][]ScoreResponse `json:"version"`
-}
-
-type OverPowerResponseStats struct {
+type OverPowerStatsResponse struct {
 	All     decimal.Decimal            `json:"all"`
 	Genre   map[string]decimal.Decimal `json:"genre"`
 	Version map[string]decimal.Decimal `json:"version"`
+}
+
+type OverPowerScoresResponse struct {
+	Genre   map[string][]ScoreResponse `json:"genre"`
+	Version map[string][]ScoreResponse `json:"version"`
 }
 
 // Represents a chart in the database.

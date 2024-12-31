@@ -28,6 +28,7 @@ func (h *UserHandler) Routes() chi.Router {
 	r.Use(middleware.RequireAuth)
 	r.Get("/me", h.getCurrentUser)
 	r.Get("/{id}/stats", h.getStats)
+	r.Get("/{id}/scores", h.getScores)
 
 	return r
 }
@@ -100,28 +101,81 @@ func (h *UserHandler) getStats(w http.ResponseWriter, r *http.Request) {
 
 	allOP := decimal.Zero
 
-	genre := make(map[string][]models.ScoreResponse)
 	genreOP := make(map[string]decimal.Decimal)
 
-	version := make(map[string][]models.ScoreResponse)
 	versionOP := make(map[string]decimal.Decimal)
 
 	for _, item := range results {
 		allOP = allOP.Add(item.OverPower)
-
-		genre[item.Song.Genre] = append(genre[item.Song.Genre], item)
 		genreOP[item.Song.Genre] = genreOP[item.Song.Genre].Add(item.OverPower)
-
-		version[item.Song.Version] = append(version[item.Song.Version], item)
 		versionOP[item.Song.Version] = versionOP[item.Song.Version].Add(item.OverPower)
 	}
 
-	response := models.OverPowerResponse{
-		Stats: models.OverPowerResponseStats{
-			All:     allOP,
-			Genre:   genreOP,
-			Version: versionOP,
-		},
+	response := models.OverPowerStatsResponse{
+		All:     allOP,
+		Genre:   genreOP,
+		Version: versionOP,
+	}
+
+	utils.JSON(w, http.StatusOK, response)
+}
+
+func (h *UserHandler) getScores(w http.ResponseWriter, r *http.Request) {
+	userID := chi.URLParam(r, "id")
+
+	if userID == "me" {
+		userID = r.Context().Value("user_id").(string)
+	}
+
+	var user models.User
+	if err := h.db.Where("id = ?", userID).First(&user).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			logger.Error("user.getScores", err, "user not found")
+			utils.Error(w, http.StatusNotFound, err)
+			return
+		}
+
+		logger.Error("user.getScores", err, "failed to get user")
+		utils.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	var results []models.ScoreResponse
+	if err := h.db.Model(&models.Score{}).
+		Preload("Chart").
+		Preload("Song").
+		Raw(`
+			WITH ranked_scores AS (
+				SELECT
+					*,
+					ROW_NUMBER() OVER (PARTITION BY song_id ORDER BY over_power DESC) as rn
+				FROM
+					scores
+				WHERE
+					user_id = ?
+			)
+			SELECT
+				*
+			FROM
+				ranked_scores
+			WHERE
+				rn = 1;
+		`, userID).
+		Find(&results).Error; err != nil {
+		logger.Error("user.getScores", err, "failed to get user's OP stats")
+		utils.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	genre := make(map[string][]models.ScoreResponse)
+	version := make(map[string][]models.ScoreResponse)
+
+	for _, item := range results {
+		genre[item.Song.Genre] = append(genre[item.Song.Genre], item)
+		version[item.Song.Version] = append(version[item.Song.Version], item)
+	}
+
+	response := models.OverPowerScoresResponse{
 		Genre:   genre,
 		Version: version,
 	}
