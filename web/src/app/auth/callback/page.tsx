@@ -13,7 +13,7 @@ export default function AuthCallback({ searchParams }: { searchParams: Promise<R
 	const [_, setIsLoggedIn] = useAtom(isLoggedInAtom);
 
 	useEffect(() => {
-		if (code && state) {
+		if (code && state && status === "idle") {
 			processAuth({ code, state }, {
 				onSuccess: () => {
 					setIsLoggedIn(true);
@@ -21,7 +21,7 @@ export default function AuthCallback({ searchParams }: { searchParams: Promise<R
 				},
 			});
 		}
-	}, [code, state, router, processAuth, setIsLoggedIn]);
+	}, [code, state, router, processAuth, status, setIsLoggedIn]);
 
 	if (status === "error") {
 		throw new Error("Something wrong happened while logging you in.");

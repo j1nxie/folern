@@ -12,14 +12,14 @@ export default function KamaitachiAuthCallback({ searchParams }: { searchParams:
 	const [{ mutate: processKamaitachiAuth, status }] = useAtom(authKamaitachiCallback);
 
 	useEffect(() => {
-		if (code) {
+		if (code && status === "idle") {
 			processKamaitachiAuth({ code }, {
 				onSuccess: () => {
 					router.replace("/");
 				},
 			});
 		}
-	}, [code, router, processKamaitachiAuth]);
+	}, [code, router, processKamaitachiAuth, status]);
 
 	if (status === "error") {
 		throw new Error("Something wrong happened while logging you in.");
