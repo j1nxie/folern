@@ -8,6 +8,7 @@ import (
 	"github.com/j1nxie/folern/middleware"
 	"github.com/j1nxie/folern/models"
 	"github.com/j1nxie/folern/utils"
+	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 )
 
@@ -97,21 +98,33 @@ func (h *UserHandler) getStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	allOP := decimal.Zero
+
 	genre := make(map[string][]models.ScoreResponse)
+	genreOP := make(map[string]decimal.Decimal)
+
 	version := make(map[string][]models.ScoreResponse)
+	versionOP := make(map[string]decimal.Decimal)
 
 	for _, item := range results {
+		allOP = allOP.Add(item.OverPower)
+
 		genre[item.Song.Genre] = append(genre[item.Song.Genre], item)
-	}
+		genreOP[item.Song.Genre] = genreOP[item.Song.Genre].Add(item.OverPower)
 
-	for _, item := range results {
 		version[item.Song.Version] = append(version[item.Song.Version], item)
+		versionOP[item.Song.Version] = versionOP[item.Song.Version].Add(item.OverPower)
 	}
 
-	var response models.OverPowerResponse
-	response.All = results
-	response.Genre = genre
-	response.Version = version
+	response := models.OverPowerResponse{
+		Stats: models.OverPowerResponseStats{
+			All:     allOP,
+			Genre:   genreOP,
+			Version: versionOP,
+		},
+		Genre:   genre,
+		Version: version,
+	}
 
 	utils.JSON(w, http.StatusOK, response)
 }

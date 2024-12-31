@@ -27,9 +27,15 @@ type ScoreResponse struct {
 }
 
 type OverPowerResponse struct {
-	All     []ScoreResponse            `json:"all"`
+	Stats   OverPowerResponseStats     `json:"stats"`
 	Genre   map[string][]ScoreResponse `json:"genre"`
 	Version map[string][]ScoreResponse `json:"version"`
+}
+
+type OverPowerResponseStats struct {
+	All     decimal.Decimal            `json:"all"`
+	Genre   map[string]decimal.Decimal `json:"genre"`
+	Version map[string]decimal.Decimal `json:"version"`
 }
 
 // Represents a chart in the database.
