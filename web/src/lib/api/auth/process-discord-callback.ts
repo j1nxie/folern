@@ -14,5 +14,5 @@ export async function processDiscordCallback({ code, state }: { code: string; st
 		throw new Error(data.error as string);
 	}
 
-	return data.data;
+	return data.body;
 }

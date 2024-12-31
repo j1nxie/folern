@@ -109,9 +109,7 @@ func (h *UserHandler) getStats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	allOP := decimal.Zero
-
 	genreOP := make(map[string]decimal.Decimal)
-
 	versionOP := make(map[string]decimal.Decimal)
 
 	for _, item := range results {

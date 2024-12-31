@@ -9,5 +9,5 @@ export async function getAuthURL(): Promise<DiscordAuthURLResponse> {
 		throw new Error(data.error as string);
 	}
 
-	return data.data;
+	return data.body;
 }
