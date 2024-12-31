@@ -1,6 +1,7 @@
 "use client";
 
 import { useAtom } from "jotai";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -22,14 +23,19 @@ export default function Header(): React.JSX.Element {
 			<div className="mx-auto w-full">
 				<NavigationMenu className="mx-auto flex w-full max-w-screen-2xl items-center px-6 py-4">
 					<NavigationMenuList className="flex items-center gap-4 xl:gap-6">
-						<NavigationMenuItem className="lg:mr-4">
-							<NavigationMenuLink asChild>
-								<Button variant="link" className="p-0" asChild>
-									<Link href="/">folern</Link>
-								</Button>
-							</NavigationMenuLink>
-						</NavigationMenuItem>
+						<Link href="/">
+							<Image src="/folern.png" alt="folern" width={48} height={48} className="rounded-xl" priority />
+						</Link>
 
+						{isLoggedIn && loginStatus !== "pending" && (
+							<NavigationMenuItem>
+								<NavigationMenuLink asChild>
+									<Button variant="link" className="p-0" asChild>
+										<Link href="/profile">Profile</Link>
+									</Button>
+								</NavigationMenuLink>
+							</NavigationMenuItem>
+						)}
 						<NavigationMenuItem>
 							<NavigationMenuLink asChild>
 								<Button variant="link" className="p-0" asChild>
