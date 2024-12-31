@@ -4,7 +4,7 @@ import "fmt"
 
 type FolernResponse[T any] struct {
 	Success bool   `json:"success"`
-	Body    T      `json:"data,omitempty"`
+	Body    T      `json:"body,omitempty"`
 	Error   error  `json:"error,omitempty"`
 	Cat     string `json:"cat"`
 }

@@ -24,7 +24,7 @@ export function ToAPIURL(path: string, queryParams?: Record<string, string>): st
 
 export interface FolernResponse<T = unknown, E = unknown> {
 	success: boolean;
-	data: T;
+	body: T;
 	error: E;
 	cat: string;
 }
