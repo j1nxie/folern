@@ -71,27 +71,47 @@ func (h *UserHandler) getStats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var results []models.ScoreResponse
-	if err := h.db.Raw(`
-		WITH ranked_scores AS (
+	if err := h.db.Model(&models.Score{}).
+		Preload("Chart").
+		Preload("Song").
+		Raw(`
+			WITH ranked_scores AS (
+				SELECT
+					*,
+					ROW_NUMBER() OVER (PARTITION BY song_id ORDER BY over_power DESC) as rn
+				FROM
+					scores
+				WHERE
+					user_id = ?
+			)
 			SELECT
-				*,
-				ROW_NUMBER() OVER (PARTITION BY song_id ORDER BY over_power DESC) AS rn
+				*
 			FROM
-				scores
+				ranked_scores
 			WHERE
-				user_id = ?
-		)
-		SELECT
-			*
-		FROM
-			ranked_scores
-		WHERE
-			rn = 1;
-	`, userID).Scan(&results).Error; err != nil {
+				rn = 1;
+		`, userID).
+		Find(&results).Error; err != nil {
 		logger.Error("user.getStats", err, "failed to get user's OP stats")
 		utils.Error(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	utils.JSON(w, http.StatusOK, results)
+	genre := make(map[string][]models.ScoreResponse)
+	version := make(map[string][]models.ScoreResponse)
+
+	for _, item := range results {
+		genre[item.Song.Genre] = append(genre[item.Song.Genre], item)
+	}
+
+	for _, item := range results {
+		version[item.Song.Version] = append(version[item.Song.Version], item)
+	}
+
+	var response models.OverPowerResponse
+	response.All = results
+	response.Genre = genre
+	response.Version = version
+
+	utils.JSON(w, http.StatusOK, response)
 }

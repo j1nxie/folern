@@ -11,6 +11,8 @@ type Score struct {
 	Lamp      ScoreLamp       `gorm:"type:score_lamp" json:"lamp"`                     // The clear status of the score.
 	OverPower decimal.Decimal `json:"over_power"`                                      // The calculated OVER POWER value of the score.
 	UserID    string          `gorm:"uniqueIndex:idx_chart_song_user" json:"user_id"`  // The ID of the user that the score belongs to.
+	Chart     Chart           `gorm:"foreignKey:ChartID" json:"chart"`
+	Song      Song            `gorm:"foreignKey:SongID" json:"song"`
 }
 
 // Represents a score entry as returned by folern's own API.
@@ -20,6 +22,14 @@ type ScoreResponse struct {
 	Score     int64           `json:"score"`                                           // The score, as displayed ingame.
 	Lamp      ScoreLamp       `gorm:"type:score_lamp" json:"lamp"`                     // The clear status of the score.
 	OverPower decimal.Decimal `json:"over_power"`                                      // The calculated OVER POWER value of the score.
+	Chart     Chart           `json:"chart"`
+	Song      Song            `json:"song"`
+}
+
+type OverPowerResponse struct {
+	All     []ScoreResponse            `json:"all"`
+	Genre   map[string][]ScoreResponse `json:"genre"`
+	Version map[string][]ScoreResponse `json:"version"`
 }
 
 // Represents a chart in the database.
