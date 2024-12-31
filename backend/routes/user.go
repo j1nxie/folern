@@ -33,6 +33,36 @@ func (h *UserHandler) Routes() chi.Router {
 	return r
 }
 
+func (h *UserHandler) retrieveScoresFromDB(userID string) ([]models.ScoreResponse, error) {
+	var results []models.ScoreResponse
+	if err := h.db.Model(&models.Score{}).
+		Preload("Chart").
+		Preload("Song").
+		Raw(`
+			WITH ranked_scores AS (
+				SELECT
+					*,
+					ROW_NUMBER() OVER (PARTITION BY song_id ORDER BY over_power DESC) as rn
+				FROM
+					scores
+				WHERE
+					user_id = ?
+			)
+			SELECT
+				*
+			FROM
+				ranked_scores
+			WHERE
+				rn = 1;
+		`, userID).
+		Find(&results).Error; err != nil {
+		logger.Error("user.getStats", err, "failed to get user's OP stats")
+		return nil, err
+	}
+
+	return results, nil
+}
+
 func (h *UserHandler) getCurrentUser(w http.ResponseWriter, r *http.Request) {
 	user_id := r.Context().Value("user_id").(string)
 
@@ -72,29 +102,8 @@ func (h *UserHandler) getStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var results []models.ScoreResponse
-	if err := h.db.Model(&models.Score{}).
-		Preload("Chart").
-		Preload("Song").
-		Raw(`
-			WITH ranked_scores AS (
-				SELECT
-					*,
-					ROW_NUMBER() OVER (PARTITION BY song_id ORDER BY over_power DESC) as rn
-				FROM
-					scores
-				WHERE
-					user_id = ?
-			)
-			SELECT
-				*
-			FROM
-				ranked_scores
-			WHERE
-				rn = 1;
-		`, userID).
-		Find(&results).Error; err != nil {
-		logger.Error("user.getStats", err, "failed to get user's OP stats")
+	results, err := h.retrieveScoresFromDB(userID)
+	if err != nil {
 		utils.Error(w, http.StatusInternalServerError, err)
 		return
 	}
@@ -140,29 +149,8 @@ func (h *UserHandler) getScores(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var results []models.ScoreResponse
-	if err := h.db.Model(&models.Score{}).
-		Preload("Chart").
-		Preload("Song").
-		Raw(`
-			WITH ranked_scores AS (
-				SELECT
-					*,
-					ROW_NUMBER() OVER (PARTITION BY song_id ORDER BY over_power DESC) as rn
-				FROM
-					scores
-				WHERE
-					user_id = ?
-			)
-			SELECT
-				*
-			FROM
-				ranked_scores
-			WHERE
-				rn = 1;
-		`, userID).
-		Find(&results).Error; err != nil {
-		logger.Error("user.getScores", err, "failed to get user's OP stats")
+	results, err := h.retrieveScoresFromDB(userID)
+	if err != nil {
 		utils.Error(w, http.StatusInternalServerError, err)
 		return
 	}
