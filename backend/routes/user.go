@@ -64,10 +64,10 @@ func (h *UserHandler) retrieveScoresFromDB(userID string) ([]models.Score, error
 }
 
 func (h *UserHandler) getCurrentUser(w http.ResponseWriter, r *http.Request) {
-	user_id := r.Context().Value("user_id").(string)
+	userID := r.Context().Value("user_id").(string)
 
 	var user models.User
-	if err := h.db.Where("id = ?", user_id).First(&user).Error; err != nil {
+	if err := h.db.Where("id = ?", userID).First(&user).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			logger.Error("user.getStats", err, "user not found")
 			utils.Error(w, http.StatusNotFound, err)
