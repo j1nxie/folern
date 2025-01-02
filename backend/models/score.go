@@ -42,12 +42,11 @@ type Chart struct {
 
 // Represents a song in the database.
 type Song struct {
-	ID      int     `gorm:"primaryKey;autoincrement:false" json:"id"` // The song's ID, as well as its ingame ID.
-	Title   string  `json:"title"`                                    // The song's title.
-	Artist  string  `json:"artist"`                                   // The song's artist.
-	Version string  `json:"version"`                                  // The game version the song was introduced in.
-	Genre   string  `json:"genre"`                                    // The ingame genre the song is categorized in.
-	Charts  []Chart `gorm:"foreignKey:SongID" json:"charts"`
+	ID      int    `gorm:"primaryKey;autoincrement:false" json:"id"` // The song's ID, as well as its ingame ID.
+	Title   string `json:"title"`                                    // The song's title.
+	Artist  string `json:"artist"`                                   // The song's artist.
+	Version string `json:"version"`                                  // The game version the song was introduced in.
+	Genre   string `json:"genre"`                                    // The ingame genre the song is categorized in.
 }
 
 // The clear status of a song.
