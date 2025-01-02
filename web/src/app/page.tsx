@@ -1,7 +1,7 @@
 "use client";
 
 import { SiDiscord } from "@icons-pack/react-simple-icons";
-import { useAtom } from "jotai";
+import { useAtomValue } from "jotai";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { getAuthURL } from "@/lib/api/auth/get-url";
 
 export default function Home(): React.JSX.Element {
-	const [isLoggedIn, _] = useAtom(isLoggedInAtom);
+	const isLoggedIn = useAtomValue(isLoggedInAtom);
 
 	return (
 		<div className="my-auto flex grow flex-col items-center justify-center gap-2">
