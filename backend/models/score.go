@@ -28,9 +28,10 @@ type OverPowerScoresResponse struct {
 
 // Represents a chart in the database.
 type Chart struct {
-	ID     string          `gorm:"primaryKey" json:"id"` // The chart's ID.
-	SongID int             `json:"song_id"`              // The song's ID, as well as its ingame ID.
-	Level  decimal.Decimal `json:"level"`                // The chart's internal level.
+	ID           string          `gorm:"primaryKey" json:"id"`                                                                                                // The chart's ID.
+	SongID       int             `json:"song_id"`                                                                                                             // The song's ID, as well as its ingame ID.
+	Level        decimal.Decimal `json:"level"`                                                                                                               // The chart's internal level.
+	MaxOverPower decimal.Decimal `gorm:"->;type:TEXT GENERATED ALWAYS AS ((level::DECIMAL * 5 + 15 + 2)::DECIMAL) STORED;default:(-);" json:"max_over_power"` // The maximum OVER POWER value of the chart.
 }
 
 // Represents a song in the database.
