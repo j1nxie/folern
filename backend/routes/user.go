@@ -26,7 +26,7 @@ func (h *UserHandler) Routes() chi.Router {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequireAuth)
-	r.Get("/me", h.getCurrentUser)
+	r.Get("/{id}", h.getCurrentUser)
 	r.Get("/{id}/stats", h.getStats)
 	r.Get("/{id}/scores", h.getScores)
 
@@ -64,7 +64,11 @@ func (h *UserHandler) retrieveScoresFromDB(userID string) ([]models.Score, error
 }
 
 func (h *UserHandler) getCurrentUser(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("user_id").(string)
+	userID := chi.URLParam(r, "id")
+
+	if userID == "me" {
+		userID = r.Context().Value("user_id").(string)
+	}
 
 	var user models.User
 	if err := h.db.Where("id = ?", userID).First(&user).Error; err != nil {
