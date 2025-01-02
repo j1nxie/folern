@@ -33,11 +33,25 @@ func InitDB() {
 		EXCEPTION
 			WHEN duplicate_object THEN null;
 		END $$;
-		`,
-	)
+	`)
+
+	// dropping this column at every migration because the ALTER TABLE query dies if it's ALTER COLUMN and not ADD COLUMN
+	db.Exec(`
+		ALTER TABLE
+			charts
+		DROP COLUMN
+			max_over_power;
+	`)
 
 	logger.Operation("db.init", "starting db migrations...")
-	if err := db.AutoMigrate(&models.User{}, &models.Score{}, &models.Song{}, &models.Chart{}, &models.UserAPIKey{}); err != nil {
+	if err := db.AutoMigrate(
+		&models.User{},
+		&models.Score{},
+		&models.Chart{},
+		&models.Song{},
+		&models.UserAPIKey{},
+		&models.TotalOverPower{},
+	); err != nil {
 		logger.Error("database.init", err, "failed to migrate database")
 		panic("failed to migrate database")
 	}

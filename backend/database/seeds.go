@@ -103,13 +103,93 @@ func updateSeedData(db *gorm.DB, seedName string, filename string) error {
 	return tx.Commit().Error
 }
 
+func calculateTotalOverpower(db *gorm.DB) error {
+	tx := db.Begin()
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	if err := tx.Exec(`
+		WITH
+			ranked_charts AS (
+				SELECT
+					*,
+					ROW_NUMBER() OVER (PARTITION BY song_id ORDER BY charts.level::DECIMAL DESC) as rn
+				FROM
+					charts
+			),
+			highest_charts AS (
+				SELECT
+					c.*,
+					s.version,
+					s.genre
+				FROM
+					ranked_charts c
+				INNER JOIN
+					songs s ON s.id = c.song_id
+				WHERE
+					rn = 1
+			),
+			total_overpower AS (
+				SELECT
+					'all' as category,
+					'possession' as type,
+					SUM(max_over_power::DECIMAL) as value
+				FROM
+					highest_charts
+				UNION ALL
+
+				SELECT
+					version as category,
+					'possession' as type,
+					SUM(max_over_power::DECIMAL) as value
+				FROM
+					highest_charts
+				GROUP BY
+					version
+				UNION ALL
+
+				SELECT
+					genre as category,
+					'possession' as type,
+					SUM(max_over_power::DECIMAL) as value
+				FROM
+					highest_charts
+				GROUP BY
+					genre
+			)
+		INSERT INTO
+			total_over_powers(category, type, value)
+		SELECT
+			*
+		FROM
+			total_overpower
+		ON CONFLICT
+			(category, type)
+		DO UPDATE SET
+			value = EXCLUDED.value;
+	`).Error; err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to calculate total op: %w", err)
+	}
+
+	return tx.Commit().Error
+}
+
 func SeedDatabase(db *gorm.DB) error {
+	logger.Operation("db.seeds", "seeding songs data...")
 	if err := updateSeedData(db, "songs", "seeds/songs.json"); err != nil {
 		return fmt.Errorf("failed to seed songs: %w", err)
 	}
 
+	logger.Operation("db.seeds", "seeding charts data...")
 	if err := updateSeedData(db, "charts", "seeds/charts.json"); err != nil {
 		return fmt.Errorf("failed to seed charts: %w", err)
+	}
+
+	logger.Operation("db.seeds", "seeding total op data...")
+	if err := calculateTotalOverpower(db); err != nil {
+		return fmt.Errorf("failed to calculate total op: %w", err)
 	}
 
 	return nil
