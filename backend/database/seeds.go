@@ -25,7 +25,7 @@ func updateSeedData(db *gorm.DB, seedName string, filename string) error {
 
 	switch seedName {
 	case "songs":
-		if err := tx.Raw(`
+		if err := tx.Exec(`
 			INSERT INTO songs
 				(id, title, artist, version, genre)
 			SELECT
