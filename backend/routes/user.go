@@ -56,7 +56,7 @@ func (h *UserHandler) retrieveScoresFromDB(userID string) ([]models.Score, error
 				rn = 1;
 		`, userID).
 		Find(&results).Error; err != nil {
-		logger.Error("user.getStats", err, "failed to get user's OP stats")
+		logger.Error("user.retrieveScoresFromDB", err, "failed to get user's OP stats")
 		return nil, err
 	}
 
@@ -73,7 +73,7 @@ func (h *UserHandler) getCurrentUser(w http.ResponseWriter, r *http.Request) {
 	var user models.User
 	if err := h.db.Where("id = ?", userID).First(&user).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			logger.Error("user.getStats", err, "user not found")
+			logger.Error("user.getCurrentUser", err, "user not found")
 			utils.Error(w, http.StatusNotFound, err)
 			return
 		}
