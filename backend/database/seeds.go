@@ -29,7 +29,7 @@ func updateSeedData(db *gorm.DB, seedName string, filename string) error {
 			INSERT INTO songs
 				(id, title, artist, version, genre)
 			SELECT
-				j ->> 'id', j ->> 'title', j ->> 'artist', j ->> 'data' ->> 'displayVersion', j ->> 'data' ->> 'genre'
+				(j ->> 'id')::BIGINT, j ->> 'title', j ->> 'artist', j -> 'data' ->> 'displayVersion', j -> 'data' ->> 'genre'
 			FROM json_array_elements(?) as j
 			ON CONFLICT
 				(id)
