@@ -2,6 +2,7 @@ package routes
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/j1nxie/folern/logger"
@@ -10,6 +11,7 @@ import (
 	"github.com/j1nxie/folern/utils"
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type UserHandler struct {
@@ -88,9 +90,30 @@ func (h *UserHandler) getCurrentUser(w http.ResponseWriter, r *http.Request) {
 
 func (h *UserHandler) getStats(w http.ResponseWriter, r *http.Request) {
 	userID := chi.URLParam(r, "id")
-
 	if userID == "me" {
 		userID = r.Context().Value("user_id").(string)
+	}
+	category := r.URL.Query().Get("category")
+	type_ := r.URL.Query().Get("type")
+
+	if category == "" {
+		category = "genres"
+	}
+
+	if type_ == "" {
+		type_ = "possession"
+	}
+
+	if category != "versions" && category != "genres" {
+		logger.Error("overpower.total", models.FolernError{Message: "invalid category"}, "invalid category")
+		utils.Error(w, http.StatusBadRequest, models.FolernError{Message: "invalid category"})
+		return
+	}
+
+	if type_ != "possession" {
+		logger.Error("overpower.total", models.FolernError{Message: "invalid type"}, "invalid type")
+		utils.Error(w, http.StatusBadRequest, models.FolernError{Message: "invalid type"})
+		return
 	}
 
 	var user models.User
@@ -106,26 +129,115 @@ func (h *UserHandler) getStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	results, err := h.retrieveScoresFromDB(userID)
+	userScores, err := h.retrieveScoresFromDB(userID)
 	if err != nil {
 		utils.Error(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	allOP := decimal.Zero
-	genreOP := make(map[string]decimal.Decimal)
-	versionOP := make(map[string]decimal.Decimal)
+	var totalOP []models.TotalOverPower
+	db := h.db.Model(&models.TotalOverPower{})
 
-	for _, item := range results {
-		allOP = allOP.Add(item.OverPower)
-		genreOP[item.Song.Genre] = genreOP[item.Song.Genre].Add(item.OverPower)
-		versionOP[item.Song.Version] = versionOP[item.Song.Version].Add(item.OverPower)
+	versions := []string{
+		"all",
+		"chuni",
+		"chuniplus",
+		"air",
+		"airplus",
+		"star",
+		"starplus",
+		"amazon",
+		"amazonplus",
+		"crystal",
+		"crystalplus",
+		"paradise",
+		"paradiselost",
+		"new",
+		"newplus",
+		"sun",
+		"sunplus",
+		"luminous",
+		"luminousplus",
+		"verse",
 	}
 
-	response := models.OverPowerStatsResponse{
-		All:     allOP,
-		Genre:   genreOP,
-		Version: versionOP,
+	genres := []string{
+		"all",
+		"POPS & ANIME",
+		"niconico",
+		"VARIETY",
+		"東方Project",
+		"イロドリミドリ",
+		"ゲキマイ",
+		"ORIGINAL",
+	}
+
+	var targetCategories []string
+	switch category {
+	case "genres":
+		targetCategories = genres
+	case "version":
+		targetCategories = versions
+	}
+
+	sortingString := "ARRAY['" + strings.Join(targetCategories, "','") + "']"
+	if err := db.Where("category IN ? AND type = ?", targetCategories, type_).
+		Order(clause.OrderBy{
+			Expression: gorm.Expr("array_position(" + sortingString + "::text[], category)"),
+		}).
+		Find(&totalOP).Error; err != nil {
+		utils.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	if err := h.db.Model(&models.Score{}).
+		Preload("Chart").
+		Preload("Song").
+		Raw(`
+            WITH ranked_scores AS (
+                SELECT *,
+                ROW_NUMBER() OVER (PARTITION BY song_id ORDER BY over_power DESC) as rn
+                FROM scores
+                WHERE user_id = ?
+            )
+            SELECT * FROM ranked_scores WHERE rn = 1;
+        `, userID).
+		Find(&userScores).Error; err != nil {
+		utils.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	var response []models.OverPowerStatsResponse
+
+	currentAllOP := decimal.Zero
+	currentOP := make(map[string]decimal.Decimal)
+	for _, score := range userScores {
+		switch category {
+		case "genres":
+			currentAllOP = currentAllOP.Add(score.OverPower)
+			currentOP[score.Song.Genre] = currentOP[score.Song.Genre].Add(score.OverPower)
+		case "versions":
+			currentAllOP = currentAllOP.Add(score.OverPower)
+			currentOP[score.Song.Version] = currentOP[score.Song.Version].Add(score.OverPower)
+		}
+	}
+
+	for _, total := range totalOP {
+		if total.Category == "all" {
+			response = append(response, models.OverPowerStatsResponse{
+				Category: "all",
+				Type:     total.Type,
+				Current:  currentAllOP,
+				Maximum:  total.Value,
+			})
+		} else {
+			response = append(response, models.OverPowerStatsResponse{
+				Category: total.Category,
+				Type:     total.Type,
+				Current:  currentOP[total.Category],
+				Maximum:  total.Value,
+			})
+		}
 	}
 
 	utils.JSON(w, http.StatusOK, response)

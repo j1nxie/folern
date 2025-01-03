@@ -16,9 +16,10 @@ type Score struct {
 }
 
 type OverPowerStatsResponse struct {
-	All     decimal.Decimal            `json:"all"`
-	Genre   map[string]decimal.Decimal `json:"genre"`
-	Version map[string]decimal.Decimal `json:"version"`
+	Category string          `json:"category"`
+	Type     string          `json:"type"`
+	Current  decimal.Decimal `json:"current"`
+	Maximum  decimal.Decimal `json:"maximum"`
 }
 
 type OverPowerScoresResponse struct {
