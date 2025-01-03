@@ -30,4 +30,4 @@ web-install:
 
 web-dev:
     #!/bin/sh
-    cd web && pnpm dev
+    cd web && pnpm dev --experimental-https
