@@ -1,34 +1,41 @@
 package models
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+)
 
 type FolernResponse[T any] struct {
-	Success bool   `json:"success"`
-	Body    T      `json:"body,omitempty"`
-	Error   error  `json:"error,omitempty"`
-	Cat     string `json:"cat"`
+	Success     bool   `json:"success"`
+	Description string `json:"description,omitempty"`
+	Body        *T     `json:"body,omitempty"`
+	Cat         string `json:"cat"`
 }
 
-type FolernError struct {
-	Message string `json:"message"`
-}
-
-func (e FolernError) Error() string {
-	return e.Message
-}
-
-func SuccessResponse[T any](statusCode int, body T) FolernResponse[T] {
-	return FolernResponse[T]{
-		Success: true,
-		Body:    body,
-		Cat:     fmt.Sprintf("https://http.cat/%d", statusCode),
+func SuccessResponse[T any](w http.ResponseWriter, statusCode int, description string, body T) {
+	resp := FolernResponse[T]{
+		Success:     true,
+		Description: description,
+		Body:        &body,
+		Cat:         fmt.Sprintf("https://http.cat/%d", statusCode),
 	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+
+	json.NewEncoder(w).Encode(resp)
 }
 
-func ErrorResponse[T any](statusCode int, err error) FolernResponse[T] {
-	return FolernResponse[T]{
-		Success: false,
-		Error:   err,
-		Cat:     fmt.Sprintf("https://http.cat/%d", statusCode),
+func ErrorResponse[T any](w http.ResponseWriter, statusCode int, description string) {
+	resp := FolernResponse[T]{
+		Success:     false,
+		Description: description,
+		Cat:         fmt.Sprintf("https://http.cat/%d", statusCode),
 	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+
+	json.NewEncoder(w).Encode(resp)
 }

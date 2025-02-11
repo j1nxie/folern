@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/j1nxie/folern/models"
-	"github.com/j1nxie/folern/utils"
 )
 
 type StatusHandler struct{}
@@ -29,5 +28,5 @@ func (h *StatusHandler) getStatus(w http.ResponseWriter, r *http.Request) {
 	buildInfo, _ := debug.ReadBuildInfo()
 	version := buildInfo.Main.Version
 
-	utils.JSON(w, http.StatusOK, models.Status{ServerTime: serverTime, Version: version})
+	models.SuccessResponse(w, http.StatusOK, "SUCCESSFULLY_RETURNED_STATUS", models.Status{ServerTime: serverTime, Version: version})
 }

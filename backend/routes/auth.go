@@ -71,7 +71,7 @@ func (h *AuthHandler) Routes() chi.Router {
 func (h *AuthHandler) getAuthURL(w http.ResponseWriter, r *http.Request) {
 	state, err := utils.GenerateState()
 	if err != nil {
-		utils.Error(w, http.StatusInternalServerError, models.FolernError{Message: "failed to generate state"})
+		models.ErrorResponse[any](w, http.StatusInternalServerError, "ERROR_FAILED_TO_GET_AUTH_URL")
 		return
 	}
 
@@ -87,7 +87,7 @@ func (h *AuthHandler) getAuthURL(w http.ResponseWriter, r *http.Request) {
 
 	url := h.discordOAuth2Config.AuthCodeURL(state)
 
-	utils.JSON(w, http.StatusOK, models.AuthURLResponse{URL: template.URL(url)})
+	models.SuccessResponse(w, http.StatusOK, "SUCCESSFULLY_CREATED_AUTH_URL", models.AuthURLResponse{URL: template.URL(url)})
 }
 
 func (h *AuthHandler) handleDiscordCallback(w http.ResponseWriter, r *http.Request) {
@@ -96,7 +96,7 @@ func (h *AuthHandler) handleDiscordCallback(w http.ResponseWriter, r *http.Reque
 
 	cookie, err := r.Cookie("oauth_state")
 	if err != nil {
-		utils.Error(w, http.StatusBadRequest, models.FolernError{Message: "missing state cookie"})
+		models.ErrorResponse[any](w, http.StatusBadRequest, "ERROR_MISSING_STATE")
 		return
 	}
 
@@ -112,20 +112,20 @@ func (h *AuthHandler) handleDiscordCallback(w http.ResponseWriter, r *http.Reque
 
 	if state != cookie.Value {
 		logger.Error("auth.callback", err, "invalid state", "expected", cookie.Value, "actual", r.URL.Query().Get("state"))
-		utils.Error(w, http.StatusBadRequest, models.FolernError{Message: "invalid state"})
+		models.ErrorResponse[any](w, http.StatusBadRequest, "ERROR_INVALID_STATE")
 		return
 	}
 
 	if code == "" {
 		logger.Error("auth.callback", err, "invalid code")
-		utils.Error(w, http.StatusBadRequest, err)
+		models.ErrorResponse[any](w, http.StatusBadRequest, "ERROR_INVALID_CODE")
 		return
 	}
 
 	token, err := h.discordOAuth2Config.Exchange(r.Context(), code)
 	if err != nil {
 		logger.Error("auth.callback", err, "failed to exchange code")
-		utils.Error(w, http.StatusInternalServerError, err)
+		models.ErrorResponse[any](w, http.StatusInternalServerError, "ERROR_FAILED_TO_EXCHANGE_CODE")
 		return
 	}
 
@@ -133,7 +133,7 @@ func (h *AuthHandler) handleDiscordCallback(w http.ResponseWriter, r *http.Reque
 	resp, err := client.Get("https://discord.com/api/users/@me")
 	if err != nil {
 		logger.Error("auth.callback", err, "failed to get user data")
-		utils.Error(w, http.StatusInternalServerError, err)
+		models.ErrorResponse[any](w, http.StatusInternalServerError, "ERROR_FAILED_TO_GET_DISCORD_USER_DATA")
 		return
 	}
 	defer resp.Body.Close()
@@ -141,7 +141,7 @@ func (h *AuthHandler) handleDiscordCallback(w http.ResponseWriter, r *http.Reque
 	var discordUser models.DiscordUser
 	if err := json.NewDecoder(resp.Body).Decode(&discordUser); err != nil {
 		logger.Error("auth.callback", err, "failed to decode user data")
-		utils.Error(w, http.StatusInternalServerError, err)
+		models.ErrorResponse[any](w, http.StatusInternalServerError, "ERROR_FAILED_TO_GET_DISCORD_USER_DATA")
 		return
 	}
 
@@ -159,14 +159,14 @@ func (h *AuthHandler) handleDiscordCallback(w http.ResponseWriter, r *http.Reque
 		DoUpdates: clause.AssignmentColumns([]string{"email", "username", "avatar"}),
 	}).Create(&dbUser).Error; err != nil {
 		logger.Error("auth.callback", err, "failed to process user")
-		utils.Error(w, http.StatusInternalServerError, err)
+		models.ErrorResponse[any](w, http.StatusInternalServerError, "ERROR_FAILED_TO_UPDATE_USER_DATA")
 		return
 	}
 
 	jwtToken, err := utils.GenerateJWT(dbUser)
 	if err != nil {
 		logger.Error("auth.callback", err, "failed to generate jwt")
-		utils.Error(w, http.StatusInternalServerError, err)
+		models.ErrorResponse[any](w, http.StatusInternalServerError, "ERROR_FAILED_TO_GENERATE_JWT")
 		return
 	}
 
@@ -180,7 +180,7 @@ func (h *AuthHandler) handleDiscordCallback(w http.ResponseWriter, r *http.Reque
 		SameSite: http.SameSiteLaxMode,
 	})
 
-	utils.JSON(w, http.StatusCreated, models.AuthResponse{Token: jwtToken, User: &dbUser})
+	models.SuccessResponse(w, http.StatusCreated, "SUCCESSFULLY_LOGGED_IN", models.AuthResponse{Token: jwtToken, User: &dbUser})
 }
 
 func (h *AuthHandler) handleKamaitachiCallback(w http.ResponseWriter, r *http.Request) {
@@ -190,14 +190,14 @@ func (h *AuthHandler) handleKamaitachiCallback(w http.ResponseWriter, r *http.Re
 	// TODO: neater errors here
 	if code == "" {
 		logger.Error("auth.kt-callback", models.FolernError{Message: "invalid code"}, "invalid code")
-		utils.Error(w, http.StatusBadRequest, models.FolernError{Message: "invalid code"})
+		models.ErrorResponse[any](w, http.StatusBadRequest, "ERROR_INVALID_CODE")
 		return
 	}
 
 	token, err := h.kamaitachiOAuth2Config.Exchange(r.Context(), code)
 	if err != nil {
 		logger.Error("auth.kt-callback", err, "failed to exchange code")
-		utils.Error(w, http.StatusInternalServerError, err)
+		models.ErrorResponse[any](w, http.StatusInternalServerError, "ERROR_FAILED_TO_EXCHANGE_CODE")
 		return
 	}
 
@@ -205,7 +205,7 @@ func (h *AuthHandler) handleKamaitachiCallback(w http.ResponseWriter, r *http.Re
 	resp, err := client.Get("https://kamai.tachi.ac/api/v1/me")
 	if err != nil {
 		logger.Error("auth.kt-callback", err, "failed to get user data")
-		utils.Error(w, http.StatusInternalServerError, err)
+		models.ErrorResponse[any](w, http.StatusInternalServerError, "ERROR_FAILED_TO_GET_KT_USER_DATA")
 		return
 	}
 	defer resp.Body.Close()
@@ -222,11 +222,11 @@ func (h *AuthHandler) handleKamaitachiCallback(w http.ResponseWriter, r *http.Re
 		DoUpdates: clause.AssignmentColumns([]string{"encrypted_api_key"}),
 	}).Create(&dbUserAPIKey).Error; err != nil {
 		logger.Error("auth.kt-callback", err, "failed to update user API key")
-		utils.Error(w, http.StatusInternalServerError, err)
+		models.ErrorResponse[any](w, http.StatusInternalServerError, "ERROR_FAILED_TO_UPDATE_API_KEY")
 		return
 	}
 
-	utils.JSON(w, http.StatusOK, "successfully authenticated with Kamaitachi.")
+	models.SuccessResponse[any](w, http.StatusOK, "SUCCESSFULLY_AUTHENTICATED_WITH_KT", nil)
 }
 
 func (h *AuthHandler) logout(w http.ResponseWriter, _ *http.Request) {
@@ -240,5 +240,5 @@ func (h *AuthHandler) logout(w http.ResponseWriter, _ *http.Request) {
 		SameSite: http.SameSiteLaxMode,
 	})
 
-	utils.JSON(w, http.StatusOK, "successfully logged out.")
+	models.SuccessResponse[any](w, http.StatusOK, "SUCCESSFULLY_LOGGED_OUT", nil)
 }

@@ -29,13 +29,13 @@ func RequireAuth(next http.Handler) http.Handler {
 		}
 
 		if token == "" {
-			utils.Error(w, http.StatusUnauthorized, models.FolernError{Message: "unauthorized"})
+			models.ErrorResponse[any](w, http.StatusUnauthorized, "ERROR_UNAUTHORIZED")
 			return
 		}
 
 		claims, err := utils.ValidateJWT(token)
 		if err != nil {
-			utils.Error(w, http.StatusUnauthorized, models.FolernError{Message: "invalid token"})
+			models.ErrorResponse[any](w, http.StatusUnauthorized, "ERROR_INVALID_TOKEN")
 			return
 		}
 

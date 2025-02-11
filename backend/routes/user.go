@@ -8,7 +8,6 @@ import (
 	"github.com/j1nxie/folern/logger"
 	"github.com/j1nxie/folern/middleware"
 	"github.com/j1nxie/folern/models"
-	"github.com/j1nxie/folern/utils"
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -76,16 +75,16 @@ func (h *UserHandler) getCurrentUser(w http.ResponseWriter, r *http.Request) {
 	if err := h.db.Where("id = ?", userID).First(&user).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			logger.Error("user.getCurrentUser", err, "user not found")
-			utils.Error(w, http.StatusNotFound, err)
+			models.ErrorResponse[any](w, http.StatusNotFound, "ERROR_USER_NOT_FOUND")
 			return
 		}
 
 		logger.Error("user.getCurrentUser", err, "failed to get user")
-		utils.Error(w, http.StatusInternalServerError, err)
+		models.ErrorResponse[any](w, http.StatusNotFound, "ERROR_FAILED_TO_GET_USER")
 		return
 	}
 
-	utils.JSON(w, http.StatusOK, user)
+	models.SuccessResponse(w, http.StatusOK, "SUCCESSFULLY_RETURNED_USER", user)
 }
 
 func (h *UserHandler) getStats(w http.ResponseWriter, r *http.Request) {
@@ -106,13 +105,13 @@ func (h *UserHandler) getStats(w http.ResponseWriter, r *http.Request) {
 
 	if category != "versions" && category != "genres" {
 		logger.Error("overpower.total", models.FolernError{Message: "invalid category"}, "invalid category")
-		utils.Error(w, http.StatusBadRequest, models.FolernError{Message: "invalid category"})
+		models.ErrorResponse[any](w, http.StatusBadRequest, "ERROR_INVALID_CATEGORY")
 		return
 	}
 
 	if type_ != "possession" {
 		logger.Error("overpower.total", models.FolernError{Message: "invalid type"}, "invalid type")
-		utils.Error(w, http.StatusBadRequest, models.FolernError{Message: "invalid type"})
+		models.ErrorResponse[any](w, http.StatusBadRequest, "ERROR_INVALID_TYPE")
 		return
 	}
 
@@ -120,18 +119,18 @@ func (h *UserHandler) getStats(w http.ResponseWriter, r *http.Request) {
 	if err := h.db.Where("id = ?", userID).First(&user).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			logger.Error("user.getStats", err, "user not found")
-			utils.Error(w, http.StatusNotFound, err)
+			models.ErrorResponse[any](w, http.StatusNotFound, "ERROR_USER_NOT_FOUND")
 			return
 		}
 
 		logger.Error("user.getStats", err, "failed to get user")
-		utils.Error(w, http.StatusInternalServerError, err)
+		models.ErrorResponse[any](w, http.StatusInternalServerError, "ERROR_FAILED_TO_GET_USER")
 		return
 	}
 
 	userScores, err := h.retrieveScoresFromDB(userID)
 	if err != nil {
-		utils.Error(w, http.StatusInternalServerError, err)
+		models.ErrorResponse[any](w, http.StatusInternalServerError, "ERROR_FAILED_TO_GET_SCORES")
 		return
 	}
 
@@ -186,7 +185,7 @@ func (h *UserHandler) getStats(w http.ResponseWriter, r *http.Request) {
 			Expression: gorm.Expr("array_position(" + sortingString + "::text[], category)"),
 		}).
 		Find(&totalOP).Error; err != nil {
-		utils.Error(w, http.StatusInternalServerError, err)
+		models.ErrorResponse[any](w, http.StatusInternalServerError, "ERROR_FAILED_TO_GET_OVERPOWER")
 		return
 	}
 
@@ -203,7 +202,7 @@ func (h *UserHandler) getStats(w http.ResponseWriter, r *http.Request) {
             SELECT * FROM ranked_scores WHERE rn = 1;
         `, userID).
 		Find(&userScores).Error; err != nil {
-		utils.Error(w, http.StatusInternalServerError, err)
+		models.ErrorResponse[any](w, http.StatusInternalServerError, "ERROR_FAILED_TO_GET_OVERPOWER")
 		return
 	}
 
@@ -240,7 +239,7 @@ func (h *UserHandler) getStats(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	utils.JSON(w, http.StatusOK, response)
+	models.SuccessResponse(w, http.StatusOK, "SUCCESSFULLY_RETURNED_OVERPOWER", response)
 }
 
 func (h *UserHandler) getScores(w http.ResponseWriter, r *http.Request) {
@@ -254,18 +253,18 @@ func (h *UserHandler) getScores(w http.ResponseWriter, r *http.Request) {
 	if err := h.db.Where("id = ?", userID).First(&user).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			logger.Error("user.getScores", err, "user not found")
-			utils.Error(w, http.StatusNotFound, err)
+			models.ErrorResponse[any](w, http.StatusNotFound, "ERROR_USER_NOT_FOUND")
 			return
 		}
 
 		logger.Error("user.getScores", err, "failed to get user")
-		utils.Error(w, http.StatusInternalServerError, err)
+		models.ErrorResponse[any](w, http.StatusInternalServerError, "ERROR_FAILED_TO_GET_USER")
 		return
 	}
 
 	results, err := h.retrieveScoresFromDB(userID)
 	if err != nil {
-		utils.Error(w, http.StatusInternalServerError, err)
+		models.ErrorResponse[any](w, http.StatusInternalServerError, "ERROR_FAILED_TO_GET_SCORES")
 		return
 	}
 
@@ -282,5 +281,5 @@ func (h *UserHandler) getScores(w http.ResponseWriter, r *http.Request) {
 		Version: version,
 	}
 
-	utils.JSON(w, http.StatusOK, response)
+	models.SuccessResponse(w, http.StatusOK, "SUCCESSFULLY_RETURNED_SCORES", response)
 }

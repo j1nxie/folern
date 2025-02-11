@@ -47,7 +47,7 @@ func (h *KamaitachiHandler) syncStatus(w http.ResponseWriter, r *http.Request) {
 	inQueue := h.syncQueue[userID]
 	h.queueMutex.RUnlock()
 
-	utils.JSON(w, http.StatusOK, map[string]bool{"syncing": inQueue})
+	models.SuccessResponse[any](w, http.StatusOK, "SUCCESSFULLY_RETURNED_SYNC_STATUS", map[string]bool{"syncing": inQueue})
 }
 
 func (h *KamaitachiHandler) syncScores(w http.ResponseWriter, r *http.Request) {
@@ -58,7 +58,7 @@ func (h *KamaitachiHandler) syncScores(w http.ResponseWriter, r *http.Request) {
 	h.queueMutex.RUnlock()
 
 	if inQueue {
-		utils.JSON(w, http.StatusAccepted, "sync already in progress")
+		models.SuccessResponse[any](w, http.StatusAccepted, "SYNC_ALREADY_IN_PROGRESS", nil)
 		return
 	}
 
@@ -76,7 +76,7 @@ func (h *KamaitachiHandler) syncScores(w http.ResponseWriter, r *http.Request) {
 		h.processSyncRequest(userID)
 	})
 
-	utils.JSON(w, http.StatusAccepted, "sync started")
+	models.SuccessResponse[any](w, http.StatusAccepted, "SUCCESSFULLY_STARTED_SYNC", nil)
 }
 
 var client = &http.Client{}
