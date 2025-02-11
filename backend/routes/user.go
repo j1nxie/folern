@@ -57,7 +57,7 @@ func (h *UserHandler) retrieveScoresFromDB(userID string) ([]models.Score, error
 				rn = 1;
 		`, userID).
 		Find(&results).Error; err != nil {
-		logger.Error("user.retrieveScoresFromDB", err, "failed to get user's OP stats")
+		logger.Error("user.retrieveScoresFromDB", err.Error(), "failed to get user's OP stats")
 		return nil, err
 	}
 
@@ -74,12 +74,12 @@ func (h *UserHandler) getCurrentUser(w http.ResponseWriter, r *http.Request) {
 	var user models.User
 	if err := h.db.Where("id = ?", userID).First(&user).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			logger.Error("user.getCurrentUser", err, "user not found")
+			logger.Error("user.getCurrentUser", err.Error(), "user not found")
 			models.ErrorResponse[any](w, http.StatusNotFound, "ERROR_USER_NOT_FOUND")
 			return
 		}
 
-		logger.Error("user.getCurrentUser", err, "failed to get user")
+		logger.Error("user.getCurrentUser", err.Error(), "failed to get user")
 		models.ErrorResponse[any](w, http.StatusNotFound, "ERROR_FAILED_TO_GET_USER")
 		return
 	}
@@ -104,13 +104,13 @@ func (h *UserHandler) getStats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if category != "versions" && category != "genres" {
-		logger.Error("overpower.total", models.FolernError{Message: "invalid category"}, "invalid category")
+		logger.Error("overpower.total", "invalid category", "invalid category")
 		models.ErrorResponse[any](w, http.StatusBadRequest, "ERROR_INVALID_CATEGORY")
 		return
 	}
 
 	if type_ != "possession" {
-		logger.Error("overpower.total", models.FolernError{Message: "invalid type"}, "invalid type")
+		logger.Error("overpower.total", "invalid type", "invalid type")
 		models.ErrorResponse[any](w, http.StatusBadRequest, "ERROR_INVALID_TYPE")
 		return
 	}
@@ -118,12 +118,12 @@ func (h *UserHandler) getStats(w http.ResponseWriter, r *http.Request) {
 	var user models.User
 	if err := h.db.Where("id = ?", userID).First(&user).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			logger.Error("user.getStats", err, "user not found")
+			logger.Error("user.getStats", err.Error(), "user not found")
 			models.ErrorResponse[any](w, http.StatusNotFound, "ERROR_USER_NOT_FOUND")
 			return
 		}
 
-		logger.Error("user.getStats", err, "failed to get user")
+		logger.Error("user.getStats", err.Error(), "failed to get user")
 		models.ErrorResponse[any](w, http.StatusInternalServerError, "ERROR_FAILED_TO_GET_USER")
 		return
 	}
@@ -252,12 +252,12 @@ func (h *UserHandler) getScores(w http.ResponseWriter, r *http.Request) {
 	var user models.User
 	if err := h.db.Where("id = ?", userID).First(&user).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			logger.Error("user.getScores", err, "user not found")
+			logger.Error("user.getScores", err.Error(), "user not found")
 			models.ErrorResponse[any](w, http.StatusNotFound, "ERROR_USER_NOT_FOUND")
 			return
 		}
 
-		logger.Error("user.getScores", err, "failed to get user")
+		logger.Error("user.getScores", err.Error(), "failed to get user")
 		models.ErrorResponse[any](w, http.StatusInternalServerError, "ERROR_FAILED_TO_GET_USER")
 		return
 	}

@@ -90,11 +90,11 @@ func (h *KamaitachiHandler) processSyncRequest(userID string) (int, int, error) 
 	var creds models.UserAPIKey
 	if err := h.db.Where("user_id = ?", userID).First(&creds).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			logger.Error("kt.sync", err, "user not authenticated with Kamaitachi")
+			logger.Error("kt.sync", err.Error(), "user not authenticated with Kamaitachi")
 			return 0, 0, err
 		}
 
-		logger.Error("kt.sync", err, "failed to fetch user API key")
+		logger.Error("kt.sync", err.Error(), "failed to fetch user API key")
 		return 0, 0, err
 	}
 
@@ -105,14 +105,14 @@ func (h *KamaitachiHandler) processSyncRequest(userID string) (int, int, error) 
 
 	res, err := client.Do(req)
 	if err != nil {
-		logger.Error("kt.sync", err, "failed to fetch PB data from Kamaitachi")
+		logger.Error("kt.sync", err.Error(), "failed to fetch PB data from Kamaitachi")
 		return 0, 0, err
 	}
 	defer res.Body.Close()
 
 	var ktRes models.KamaitachiResponse[models.KamaitachiPBResponse]
 	if err := json.NewDecoder(res.Body).Decode(&ktRes); err != nil {
-		logger.Error("kt.sync", err, "failed to decode PB data")
+		logger.Error("kt.sync", err.Error(), "failed to decode PB data")
 		return 0, 0, err
 	}
 
@@ -121,7 +121,7 @@ func (h *KamaitachiHandler) processSyncRequest(userID string) (int, int, error) 
 		result := h.db.Where("id = ?", pb.ChartID).First(&chart)
 
 		if result.Error != nil {
-			logger.Error("kt.sync", err, "error when fetching chart for score")
+			logger.Error("kt.sync", result.Error.Error(), "error when fetching chart for score")
 			errorCount++
 			continue
 		}
@@ -143,7 +143,7 @@ func (h *KamaitachiHandler) processSyncRequest(userID string) (int, int, error) 
 			},
 			DoUpdates: clause.AssignmentColumns([]string{"score", "lamp", "over_power"}),
 		}).Create(&folernScore).Error; err != nil {
-			logger.Error("kt.sync", err, "failed to process score")
+			logger.Error("kt.sync", err.Error(), "failed to process score")
 			errorCount++
 			continue
 		}

@@ -75,7 +75,7 @@ func updateSeedData(db *gorm.DB, seedName string, filename string) error {
 					Preload("Chart").
 					Where("chart_id = ?", result.ID).
 					Find(&affectedScores).Error; err != nil {
-					logger.Error("db.updateSeedData", err, "failed to query affected scores")
+					logger.Error("db.updateSeedData", err.Error(), "failed to query affected scores")
 					continue
 				}
 
@@ -88,7 +88,7 @@ func updateSeedData(db *gorm.DB, seedName string, filename string) error {
 					score.OverPower = utils.CalculateOverpower(score.Score, score.Chart.Level, string(score.Lamp))
 
 					if err := tx.Save(&score).Error; err != nil {
-						logger.Error("db.updateSeedData", err, "failed to save recalculated score")
+						logger.Error("db.updateSeedData", err.Error(), "failed to save recalculated score")
 						continue
 					}
 				}

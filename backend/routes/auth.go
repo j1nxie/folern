@@ -111,20 +111,20 @@ func (h *AuthHandler) handleDiscordCallback(w http.ResponseWriter, r *http.Reque
 	})
 
 	if state != cookie.Value {
-		logger.Error("auth.callback", err, "invalid state", "expected", cookie.Value, "actual", r.URL.Query().Get("state"))
+		logger.Error("auth.callback", "invalid state", "expected", cookie.Value, "actual", r.URL.Query().Get("state"))
 		models.ErrorResponse[any](w, http.StatusBadRequest, "ERROR_INVALID_STATE")
 		return
 	}
 
 	if code == "" {
-		logger.Error("auth.callback", err, "invalid code")
+		logger.Error("auth.callback", "invalid code")
 		models.ErrorResponse[any](w, http.StatusBadRequest, "ERROR_INVALID_CODE")
 		return
 	}
 
 	token, err := h.discordOAuth2Config.Exchange(r.Context(), code)
 	if err != nil {
-		logger.Error("auth.callback", err, "failed to exchange code")
+		logger.Error("auth.callback", err.Error(), "failed to exchange code")
 		models.ErrorResponse[any](w, http.StatusInternalServerError, "ERROR_FAILED_TO_EXCHANGE_CODE")
 		return
 	}
@@ -132,7 +132,7 @@ func (h *AuthHandler) handleDiscordCallback(w http.ResponseWriter, r *http.Reque
 	client := h.discordOAuth2Config.Client(r.Context(), token)
 	resp, err := client.Get("https://discord.com/api/users/@me")
 	if err != nil {
-		logger.Error("auth.callback", err, "failed to get user data")
+		logger.Error("auth.callback", err.Error(), "failed to get user data")
 		models.ErrorResponse[any](w, http.StatusInternalServerError, "ERROR_FAILED_TO_GET_DISCORD_USER_DATA")
 		return
 	}
@@ -140,7 +140,7 @@ func (h *AuthHandler) handleDiscordCallback(w http.ResponseWriter, r *http.Reque
 
 	var discordUser models.DiscordUser
 	if err := json.NewDecoder(resp.Body).Decode(&discordUser); err != nil {
-		logger.Error("auth.callback", err, "failed to decode user data")
+		logger.Error("auth.callback", err.Error(), "failed to decode user data")
 		models.ErrorResponse[any](w, http.StatusInternalServerError, "ERROR_FAILED_TO_GET_DISCORD_USER_DATA")
 		return
 	}
@@ -158,14 +158,14 @@ func (h *AuthHandler) handleDiscordCallback(w http.ResponseWriter, r *http.Reque
 		},
 		DoUpdates: clause.AssignmentColumns([]string{"email", "username", "avatar"}),
 	}).Create(&dbUser).Error; err != nil {
-		logger.Error("auth.callback", err, "failed to process user")
+		logger.Error("auth.callback", err.Error(), "failed to process user")
 		models.ErrorResponse[any](w, http.StatusInternalServerError, "ERROR_FAILED_TO_UPDATE_USER_DATA")
 		return
 	}
 
 	jwtToken, err := utils.GenerateJWT(dbUser)
 	if err != nil {
-		logger.Error("auth.callback", err, "failed to generate jwt")
+		logger.Error("auth.callback", err.Error(), "failed to generate jwt")
 		models.ErrorResponse[any](w, http.StatusInternalServerError, "ERROR_FAILED_TO_GENERATE_JWT")
 		return
 	}
@@ -189,14 +189,14 @@ func (h *AuthHandler) handleKamaitachiCallback(w http.ResponseWriter, r *http.Re
 
 	// TODO: neater errors here
 	if code == "" {
-		logger.Error("auth.kt-callback", models.FolernError{Message: "invalid code"}, "invalid code")
+		logger.Error("auth.kt-callback", "invalid code")
 		models.ErrorResponse[any](w, http.StatusBadRequest, "ERROR_INVALID_CODE")
 		return
 	}
 
 	token, err := h.kamaitachiOAuth2Config.Exchange(r.Context(), code)
 	if err != nil {
-		logger.Error("auth.kt-callback", err, "failed to exchange code")
+		logger.Error("auth.kt-callback", err.Error(), "failed to exchange code")
 		models.ErrorResponse[any](w, http.StatusInternalServerError, "ERROR_FAILED_TO_EXCHANGE_CODE")
 		return
 	}
@@ -204,7 +204,7 @@ func (h *AuthHandler) handleKamaitachiCallback(w http.ResponseWriter, r *http.Re
 	client = h.kamaitachiOAuth2Config.Client(r.Context(), token)
 	resp, err := client.Get("https://kamai.tachi.ac/api/v1/me")
 	if err != nil {
-		logger.Error("auth.kt-callback", err, "failed to get user data")
+		logger.Error("auth.kt-callback", err.Error(), "failed to get user data")
 		models.ErrorResponse[any](w, http.StatusInternalServerError, "ERROR_FAILED_TO_GET_KT_USER_DATA")
 		return
 	}
@@ -221,7 +221,7 @@ func (h *AuthHandler) handleKamaitachiCallback(w http.ResponseWriter, r *http.Re
 		},
 		DoUpdates: clause.AssignmentColumns([]string{"encrypted_api_key"}),
 	}).Create(&dbUserAPIKey).Error; err != nil {
-		logger.Error("auth.kt-callback", err, "failed to update user API key")
+		logger.Error("auth.kt-callback", err.Error(), "failed to update user API key")
 		models.ErrorResponse[any](w, http.StatusInternalServerError, "ERROR_FAILED_TO_UPDATE_API_KEY")
 		return
 	}

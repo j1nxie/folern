@@ -11,12 +11,8 @@ import (
 	"github.com/j1nxie/folern/logger"
 	"github.com/j1nxie/folern/models"
 	"github.com/j1nxie/folern/routes"
-	"github.com/j1nxie/folern/utils"
 	_ "github.com/joho/godotenv/autoload"
-	"golang.org/x/oauth2"
 )
-
-var oauth2Config *oauth2.Config
 
 func main() {
 	database.InitDB()
@@ -37,7 +33,7 @@ func main() {
 	}))
 
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
-		utils.Error(w, http.StatusNotFound, models.FolernError{Message: "route not found"})
+		models.ErrorResponse[any](w, http.StatusNotFound, "ERROR_NOT_FOUND")
 	})
 
 	authHandler := routes.NewAuthHandler(database.DB)

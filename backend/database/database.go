@@ -23,7 +23,7 @@ func InitDB() {
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		logger.Error("database.init", err, "failed to connect to database")
+		logger.Error("database.init", err.Error(), "failed to connect to database")
 		panic("failed to connect to database")
 	}
 
@@ -52,14 +52,14 @@ func InitDB() {
 		&models.UserAPIKey{},
 		&models.TotalOverPower{},
 	); err != nil {
-		logger.Error("database.init", err, "failed to migrate database")
+		logger.Error("database.init", err.Error(), "failed to migrate database")
 		panic("failed to migrate database")
 	}
 	logger.Operation("db.init", "finished db migrations!")
 
 	logger.Operation("db.seeds", "seeding database...")
 	if err := SeedDatabase(db); err != nil {
-		logger.Error("db.seeds", err, "failed to seed database")
+		logger.Error("db.seeds", err.Error(), "failed to seed database")
 		panic("failed to seed database")
 	}
 	logger.Operation("db.seeds", "finished seeding database!")

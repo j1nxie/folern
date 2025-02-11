@@ -71,7 +71,7 @@ func Operation(op string, details ...any) {
 	slog.Info(msg)
 }
 
-func Error(op string, err error, details ...any) {
+func Error(op string, err string, details ...any) {
 	op = yellow + "[" + op + "]" + reset
 	msg := fmt.Sprintf("%s %s", op, fmt.Sprint(details...))
 	slog.Error(msg, "error", err)
